@@ -1,4 +1,4 @@
-import { createApp } from 'vue';
+import { createApp, createSSRApp } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { createPinia } from 'pinia';
 import { initializeTheme } from '@/composables/useAppearance';
@@ -27,15 +27,25 @@ createInertiaApp({
         color: '#4B5563',
     },
     setup({ el, App, props, plugin }) {
-        createApp(App, props)
-            .use(plugin)
-            .use(createPinia())
-            .mount(el);
+        // Use createSSRApp on the server (el is null there) and createApp in the browser.
+        // @ts-ignore
+        const app = import.meta.env.SSR ? createSSRApp(App, props) : createApp(App, props);
+
+        app.use(plugin).use(createPinia());
+
+        if (el) {
+            app.mount(el);
+        }
+
+        return app;
     },
 });
 
-// This will set light / dark mode on page load...
-initializeTheme();
+// Browser-only initialization (skipped during SSR where `window` is undefined)...
+if (typeof window !== 'undefined') {
+    // This will set light / dark mode on page load...
+    initializeTheme();
 
-// This will listen for flash toast data from the server...
-initializeFlashToast();
+    // This will listen for flash toast data from the server...
+    initializeFlashToast();
+}

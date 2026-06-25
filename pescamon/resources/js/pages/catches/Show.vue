@@ -36,6 +36,7 @@ const props = defineProps<{
     levelProgress: number;
 }>();
 
+const item = props.catch;
 const commentForm = useForm({ body: '' });
 const isLiked = ref(props.catch.is_liked);
 const likesCount = ref(props.catch.likes_count);
@@ -82,7 +83,7 @@ function submitComment() {
 </script>
 
 <template>
-    <Head :title="`Captura de ${catch.species.name}`" />
+    <Head :title="`Captura de ${item.species.name}`" />
 
     <div class="mx-auto max-w-3xl px-4 py-8">
         <!-- Back link -->
@@ -94,14 +95,14 @@ function submitComment() {
             <!-- Image -->
             <div class="relative">
                 <img
-                    :src="`/storage/${catch.image_path}`"
-                    :alt="catch.species.name"
+                    :src="`/storage/${item.image_path}`"
+                    :alt="item.species.name"
                     class="h-80 w-full object-cover"
                 />
-                <div v-if="catch.status === 'pending'" class="absolute left-3 top-3 rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-semibold text-yellow-900">
+                <div v-if="item.status === 'pending'" class="absolute left-3 top-3 rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-semibold text-yellow-900">
                     ⏳ Pendiente de verificación
                 </div>
-                <div v-if="catch.is_personal_best" class="absolute right-3 top-3 rounded-full bg-amber-400 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                <div v-if="item.is_personal_best" class="absolute right-3 top-3 rounded-full bg-amber-400 px-2 py-0.5 text-xs font-semibold text-amber-900">
                     🏆 Récord personal
                 </div>
             </div>
@@ -112,15 +113,15 @@ function submitComment() {
                     <div>
                         <div class="flex items-center gap-2">
                             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                                {{ catch.species.name }}
+                                {{ item.species.name }}
                             </h1>
-                            <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold capitalize', rarityBadge[catch.species.rarity]]">
-                                {{ catch.species.rarity }}
+                            <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold capitalize', rarityBadge[item.species.rarity]]">
+                                {{ item.species.rarity }}
                             </span>
                         </div>
                         <p class="mt-0.5 text-sm text-gray-500">
-                            Por <Link :href="`/profile/${catch.user.id}`" class="font-medium hover:underline">{{ catch.user.name }}</Link>
-                            · Nv. {{ catch.user.level }}
+                            Por <Link :href="`/profile/${item.user.id}`" class="font-medium hover:underline">{{ item.user.name }}</Link>
+                            · Nv. {{ item.user.level }}
                         </p>
                     </div>
 
@@ -137,48 +138,48 @@ function submitComment() {
                 <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <div class="rounded-xl bg-gray-50 p-3 text-center dark:bg-gray-700">
                         <p class="text-xs text-gray-500 dark:text-gray-400">Peso</p>
-                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ catch.weight_kg }} kg</p>
+                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ item.weight_kg }} kg</p>
                     </div>
-                    <div v-if="catch.length_cm" class="rounded-xl bg-gray-50 p-3 text-center dark:bg-gray-700">
+                    <div v-if="item.length_cm" class="rounded-xl bg-gray-50 p-3 text-center dark:bg-gray-700">
                         <p class="text-xs text-gray-500 dark:text-gray-400">Longitud</p>
-                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ catch.length_cm }} cm</p>
+                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ item.length_cm }} cm</p>
                     </div>
                     <div class="rounded-xl bg-gray-50 p-3 text-center dark:bg-gray-700">
                         <p class="text-xs text-gray-500 dark:text-gray-400">Técnica</p>
-                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ methodLabel[catch.method] ?? catch.method }}</p>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ methodLabel[item.method] ?? item.method }}</p>
                     </div>
                     <div class="rounded-xl bg-gray-50 p-3 text-center dark:bg-gray-700">
                         <p class="text-xs text-gray-500 dark:text-gray-400">Agua</p>
-                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ waterLabel[catch.water_body_type] ?? catch.water_body_type }}</p>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ waterLabel[item.water_body_type] ?? item.water_body_type }}</p>
                     </div>
                 </div>
 
                 <!-- Meta info -->
                 <div class="mb-6 space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                    <p v-if="catch.bait_used">🪱 Cebo: <span class="font-medium text-gray-900 dark:text-white">{{ catch.bait_used }}</span></p>
-                    <p v-if="catch.location_name">📍 {{ catch.location_name }}</p>
-                    <p>📅 {{ new Date(catch.caught_at).toLocaleString('es-ES') }}</p>
+                    <p v-if="item.bait_used">🪱 Cebo: <span class="font-medium text-gray-900 dark:text-white">{{ item.bait_used }}</span></p>
+                    <p v-if="item.location_name">📍 {{ item.location_name }}</p>
+                    <p>📅 {{ new Date(item.caught_at).toLocaleString('es-ES') }}</p>
                 </div>
 
-                <p v-if="catch.notes" class="mb-6 rounded-xl bg-blue-50 p-3 text-sm text-gray-700 dark:bg-blue-900/20 dark:text-gray-300">
-                    {{ catch.notes }}
+                <p v-if="item.notes" class="mb-6 rounded-xl bg-blue-50 p-3 text-sm text-gray-700 dark:bg-blue-900/20 dark:text-gray-300">
+                    {{ item.notes }}
                 </p>
 
                 <!-- Species link -->
-                <Link :href="`/species/${catch.species.slug}`" class="mb-6 inline-block rounded-lg border border-blue-200 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400">
+                <Link :href="`/species/${item.species.slug}`" class="mb-6 inline-block rounded-lg border border-blue-200 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400">
                     Ver especie en PescaDex →
                 </Link>
 
                 <!-- Comments -->
                 <div>
-                    <h3 class="mb-3 font-semibold text-gray-900 dark:text-white">Comentarios ({{ catch.comments.length }})</h3>
+                    <h3 class="mb-3 font-semibold text-gray-900 dark:text-white">Comentarios ({{ item.comments.length }})</h3>
 
                     <div class="mb-4 space-y-3">
-                        <div v-for="comment in catch.comments" :key="comment.id" class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+                        <div v-for="comment in item.comments" :key="comment.id" class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
                             <p class="text-xs font-semibold text-gray-700 dark:text-gray-300">{{ comment.user.name }}</p>
                             <p class="mt-0.5 text-sm text-gray-600 dark:text-gray-400">{{ comment.body }}</p>
                         </div>
-                        <p v-if="catch.comments.length === 0" class="text-sm text-gray-400">Sin comentarios aún.</p>
+                        <p v-if="item.comments.length === 0" class="text-sm text-gray-400">Sin comentarios aún.</p>
                     </div>
 
                     <form @submit.prevent="submitComment" class="flex gap-2">

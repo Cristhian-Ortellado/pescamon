@@ -25,6 +25,14 @@ class SpeciesController extends Controller
             ->orderByDesc('weight_kg')
             ->first(['id', 'weight_kg', 'length_cm', 'caught_at', 'image_path', 'thumbnail_path']);
 
+        // The user's own catch history for this species (most recent first).
+        $userCatches = $user->catches()
+            ->where('species_id', $species->id)
+            ->where('status', 'verified')
+            ->latest('caught_at')
+            ->limit(20)
+            ->get(['id', 'weight_kg', 'length_cm', 'caught_at', 'image_path', 'thumbnail_path', 'location_name', 'is_personal_best']);
+
         // Map catches for this species (respecting privacy settings)
         $mapCatches = FishCatch::query()
             ->where('species_id', $species->id)
@@ -54,6 +62,7 @@ class SpeciesController extends Controller
             'species' => $species,
             'userCaught' => $userCaught,
             'personalBest' => $personalBest,
+            'userCatches' => $userCatches,
             'mapCatches' => $mapCatches,
             'stats' => [
                 'total_catches' => $totalCatches,

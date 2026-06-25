@@ -45,11 +45,12 @@ class ProcessCatchImage implements ShouldQueue
 
         Storage::disk('public')->makeDirectory('thumbnails');
 
+        // Intervention Image v4: decode() loads the source, save() encodes by
+        // file extension (.jpg) with the given quality option.
         $manager = new ImageManager(new Driver);
-        $manager->read($imagePath)
+        $manager->decode($imagePath)
             ->cover(400, 400)
-            ->toJpeg(85)
-            ->save($thumbnailAbsolute);
+            ->save($thumbnailAbsolute, quality: 85);
 
         // --- Extract EXIF ---
         $exif = $exifService->extract($imagePath);
@@ -58,6 +59,9 @@ class ProcessCatchImage implements ShouldQueue
         $updateData = [
             'thumbnail_path' => $thumbnailRelative,
             'exif_raw' => $exif['raw'] ?: null,
+            // Auto-verify on upload so XP/achievements/notifications are awarded.
+            // Swap for a moderation queue when human review is introduced.
+            'status' => 'verified',
         ];
 
         if ($exif['latitude'] !== null && $exif['longitude'] !== null) {

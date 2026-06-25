@@ -15,19 +15,20 @@ export function updateTheme(value: Appearance): void {
         return;
     }
 
+    let resolved: ResolvedAppearance;
+
     if (value === 'system') {
         const mediaQueryList = window.matchMedia(
             '(prefers-color-scheme: dark)',
         );
-        const systemTheme = mediaQueryList.matches ? 'dark' : 'light';
-
-        document.documentElement.classList.toggle(
-            'dark',
-            systemTheme === 'dark',
-        );
+        resolved = mediaQueryList.matches ? 'dark' : 'light';
     } else {
-        document.documentElement.classList.toggle('dark', value === 'dark');
+        resolved = value;
     }
+
+    document.documentElement.classList.toggle('dark', resolved === 'dark');
+    // Drive the PescaDex token palette, which keys off [data-theme].
+    document.documentElement.dataset.theme = resolved;
 }
 
 const setCookie = (name: string, value: string, days = 365) => {

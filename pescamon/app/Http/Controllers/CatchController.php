@@ -52,10 +52,12 @@ class CatchController extends Controller
             'status' => 'pending',
         ]);
 
-        ProcessCatchImage::dispatch($catch);
+        // Run synchronously so XP/achievements/verification are awarded within
+        // the request; the redirect target then shows the celebration overlay.
+        ProcessCatchImage::dispatchSync($catch);
 
         return redirect()->route('catches.show', $catch)
-            ->with('success', 'Captura enviada para revisión. ¡Recibirás XP cuando sea verificada!');
+            ->with('success', '¡Captura registrada!');
     }
 
     public function show(Request $request, FishCatch $catch): Response

@@ -67,6 +67,8 @@ class ProfileController extends Controller
         $isFollowing = $authUser->id !== $profileUser->id
             && $authUser->following()->where('followed_id', $profileUser->id)->exists();
 
+        $recordKg = $profileUser->catches()->where('status', 'verified')->max('weight_kg');
+
         return Inertia::render('profile/Show', [
             'profileUser' => [
                 ...$profileUser->only(['id', 'name', 'level', 'xp', 'catches_count', 'followers_count', 'following_count']),
@@ -76,8 +78,14 @@ class ProfileController extends Controller
             'pokedex' => $pokedex,
             'recentCatches' => $recentCatches,
             'achievements' => $achievements,
+            'stats' => [
+                'species_caught' => $caughtSpeciesIds->count(),
+                'species_total' => $allSpecies->count(),
+                'record_kg' => $recordKg !== null ? round((float) $recordKg, 1) : 0,
+            ],
             'levelProgress' => $this->levelingService->levelProgress($profileUser),
             'xpToNextLevel' => $this->levelingService->xpToNextLevel($profileUser),
+            'xpForNextLevel' => $this->levelingService->xpRequiredForLevel($profileUser->level + 1),
         ]);
     }
 }

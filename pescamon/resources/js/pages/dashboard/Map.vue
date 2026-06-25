@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { Head, Link } from '@inertiajs/vue3';
-import XpBar from '@/components/XpBar.vue';
+import { ref, onMounted, computed } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import Icon from '@/components/pescadex/Icon.vue';
+import RarityBadge from '@/components/pescadex/RarityBadge.vue';
+import FishPhoto from '@/components/pescadex/FishPhoto.vue';
+import { rarityMeta, timeAgo } from '@/lib/pescadex';
 
 interface MapCatch {
     id: number;
@@ -18,14 +21,16 @@ const props = defineProps<{
 }>();
 
 const mapContainer = ref<HTMLElement | null>(null);
-const selectedCatch = ref<MapCatch | null>(null);
+const peek = computed(() => props.mapCatches[0] ?? null);
 
 const rarityColor: Record<string, string> = {
-    common: '#6B7280',
-    uncommon: '#10B981',
-    rare: '#3B82F6',
-    legendary: '#F59E0B',
+    common: '#64748b',
+    uncommon: '#34d399',
+    rare: '#a335ee',
+    legendary: '#FF8000',
 };
+
+const filters = ['Especie', 'Peso mín', 'Método'];
 
 onMounted(async () => {
     if (!mapContainer.value) return;
@@ -33,80 +38,218 @@ onMounted(async () => {
     const L = await import('leaflet');
     await import('leaflet/dist/leaflet.css');
 
-    // Fix default marker icons for bundlers
-    delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
-    L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    });
-
-    const map = L.map(mapContainer.value).setView([20, 0], 2);
+    const map = L.map(mapContainer.value, { zoomControl: false }).setView([40.4, -3.7], 5);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        attribution: '© OpenStreetMap',
         maxZoom: 18,
     }).addTo(map);
 
+    const points: [number, number][] = [];
+
     props.mapCatches.forEach((c) => {
-        const color = rarityColor[c.species.rarity] ?? '#6B7280';
-
+        const color = rarityColor[c.species.rarity] ?? '#64748b';
         const icon = L.divIcon({
-            html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.4)"></div>`,
+            html: `<span style="display:block;width:20px;height:20px;border-radius:50% 50% 50% 2px;transform:rotate(45deg);background:${color};border:2.5px solid #eaf6ff;box-shadow:0 6px 14px rgba(0,0,0,.4)"></span>`,
             className: '',
-            iconSize: [14, 14],
-            iconAnchor: [7, 7],
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
         });
-
-        L.marker([c.latitude, c.longitude], { icon })
-            .addTo(map)
-            .bindPopup(
-                `<b>${c.species.name}</b><br><small>${new Date(c.caught_at).toLocaleDateString('es-ES')}</small><br>
-                <a href="/catches/${c.id}" class="text-blue-600 underline text-xs">Ver captura →</a>`,
-            );
+        const marker = L.marker([c.latitude, c.longitude], { icon }).addTo(map);
+        marker.on('click', () => router.visit(`/catches/${c.id}`));
+        points.push([c.latitude, c.longitude]);
     });
+
+    if (points.length) {
+        map.fitBounds(points as [number, number][], { padding: [60, 60], maxZoom: 9 });
+    }
 });
 </script>
 
 <template>
-    <Head title="Mapa de Capturas" />
+    <Head title="Mapa" />
 
-    <div class="flex h-screen flex-col">
-        <!-- Header bar -->
-        <div class="flex items-center justify-between bg-white px-4 py-2 shadow dark:bg-gray-800">
-            <div class="flex items-center gap-3">
-                <span class="text-xl font-bold text-blue-600">🎣 PescaDex</span>
-                <span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900 dark:text-blue-200">
-                    Nv. {{ userLevel }}
+    <div class="map-screen">
+        <div ref="mapContainer" class="map" />
+
+        <!-- top overlay -->
+        <div class="top">
+            <div class="search">
+                <Icon name="search" :size="19" color="var(--text-faint)" />
+                <span class="placeholder">Buscar especie o zona…</span>
+                <span class="filter-btn"><Icon name="sliders-horizontal" :size="16" color="var(--teal)" /></span>
+            </div>
+            <div class="chips">
+                <span v-for="(f, i) in filters" :key="f" class="chip" :class="{ active: i === 0 }">
+                    {{ f }} <Icon name="chevron-down" :size="13" />
                 </span>
             </div>
+        </div>
 
-            <div class="hidden w-48 md:block">
-                <XpBar :xp="userXp" :level="userLevel" />
+        <!-- peek card -->
+        <Link v-if="peek" :href="`/catches/${peek.id}`" class="peek">
+            <div class="thumb"><FishPhoto :rarity="peek.species.rarity" :stripe="7" /></div>
+            <div class="peek-body">
+                <div class="peek-title">
+                    <span class="name">{{ peek.species.name }}</span>
+                    <RarityBadge :rarity="peek.species.rarity" variant="outline" />
+                </div>
+                <div class="peek-sub">{{ timeAgo(peek.caught_at) }}</div>
             </div>
-
-            <nav class="flex items-center gap-3 text-sm">
-                <Link href="/catches/create" class="rounded-lg bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700"> + Captura </Link>
-                <Link href="/profile" class="text-gray-600 hover:text-blue-600 dark:text-gray-300">Perfil</Link>
-                <Link href="/leaderboard" class="text-gray-600 hover:text-blue-600 dark:text-gray-300">Ranking</Link>
-            </nav>
+            <Icon name="chevron-right" :size="20" color="var(--text-faint)" />
+        </Link>
+        <div v-else class="peek empty">
+            <Icon name="map-pin" :size="20" color="var(--text-faint)" />
+            <span>Aún no hay capturas en el mapa. ¡Registra la primera!</span>
         </div>
 
-        <!-- Map fills remaining space -->
-        <div ref="mapContainer" class="flex-1" />
-
-        <!-- Legend -->
-        <div class="absolute bottom-8 left-4 z-[1000] rounded-lg bg-white/90 p-3 text-xs shadow backdrop-blur dark:bg-gray-800/90">
-            <p class="mb-1 font-semibold text-gray-700 dark:text-gray-200">Rareza</p>
-            <div v-for="(color, rarity) in rarityColor" :key="rarity" class="flex items-center gap-1.5">
-                <span class="inline-block h-3 w-3 rounded-full" :style="{ background: color }" />
-                <span class="capitalize text-gray-600 dark:text-gray-300">{{ rarity }}</span>
-            </div>
-        </div>
-
-        <!-- Stats -->
-        <div class="absolute right-4 top-16 z-[1000] rounded-lg bg-white/90 p-3 text-xs shadow backdrop-blur dark:bg-gray-800/90">
-            <p class="font-semibold text-gray-700 dark:text-gray-200">{{ mapCatches.length }} capturas en el mapa</p>
-        </div>
+        <!-- FAB -->
+        <Link href="/catches/create" class="fab">
+            <Icon name="plus" :size="19" /> Registrar
+        </Link>
     </div>
 </template>
+
+<style scoped>
+.map-screen {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+.map {
+    position: absolute;
+    inset: 0;
+    background: var(--map-base);
+    z-index: 1;
+}
+:deep(.leaflet-container) {
+    background: var(--map-base);
+}
+.top {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    z-index: 12;
+}
+.search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.placeholder {
+    color: var(--text-muted);
+    font-size: 14.5px;
+}
+.filter-btn {
+    margin-left: auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: rgba(45, 212, 191, 0.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.chips {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+.chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 12px;
+    background: var(--glass-bg);
+    border: 1px solid var(--border-strong);
+    color: var(--text-soft);
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+.chip.active {
+    background: rgba(45, 212, 191, 0.16);
+    border-color: rgba(45, 212, 191, 0.5);
+    color: var(--teal-chip-text);
+}
+.peek {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 90px;
+    z-index: 14;
+    background: var(--glass-strong);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+    color: var(--text);
+}
+.peek.empty {
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+.thumb {
+    width: 50px;
+    height: 50px;
+    border-radius: 13px;
+    overflow: hidden;
+    flex: none;
+}
+.peek-body {
+    flex: 1;
+    min-width: 0;
+}
+.peek-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.peek-title .name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+}
+.peek-sub {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 2px;
+}
+.fab {
+    position: absolute;
+    right: 16px;
+    bottom: 160px;
+    z-index: 16;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: var(--accent-pdx);
+    color: var(--accent-ink);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14.5px;
+    padding: 13px 18px;
+    border-radius: 999px;
+    box-shadow: 0 12px 28px rgba(245, 165, 36, 0.5);
+}
+
+@media (min-width: 1024px) {
+    .peek {
+        bottom: 20px;
+    }
+    .fab {
+        bottom: 90px;
+    }
+}
+</style>

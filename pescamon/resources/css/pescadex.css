@@ -1,0 +1,236 @@
+/* ============================================================
+   PescaDex theme tokens (ported from the official design canvas).
+   Variables live on :root so they're always available. The dark palette
+   is the default; light overrides under [data-theme="light"], which the
+   appearance composable sets on <html> alongside Tailwind's `.dark` class.
+
+   Visual surfaces (font, background) are applied by `.pdx-app` so the rest
+   of the Tailwind/shadcn pages are left untouched.
+   ============================================================ */
+:root {
+    /* surfaces */
+    --studio-bg: radial-gradient(120% 90% at 80% -10%, #0e2c40, #07151f 60%);
+    --page-bg: #071521;
+    --bg-deep: #061a28;
+    --bg-frame: #071c2a;
+    --bg-frame-border: #04101a;
+    --frame-inset: #13293a;
+    --surface: #0c2738;
+    --surface-alt: #0e2a3d;
+    --surface-locked: #0a2230;
+    --panel: #0a2230;
+    --banner: radial-gradient(120% 100% at 80% 0%, #14506e, #0a2839 72%);
+    --nav-bg: linear-gradient(180deg, rgba(8, 24, 36, 0.6), #081826);
+    --nav-border: #16344a;
+
+    /* borders */
+    --border-pdx: #1a3c52;
+    --border-strong: #244a62;
+    --hairline: #102b3d;
+    --field-border: #1f4258;
+    --divider: #16344a;
+    --track-bg: #0a2030;
+    --track-border: #1c3e54;
+
+    /* text */
+    --text: #e7eef3;
+    --text-muted: #82a0b0;
+    --text-faint: #6f8a9b;
+    --text-locked: #3f6072;
+    --text-soft: #aac0cc;
+    --text-strong: #cfe2ec;
+    --icon-muted: #9fb6c4;
+
+    /* brand */
+    --accent-pdx: #f5a524;
+    --accent-ink: #3a2700;
+    --teal: #2dd4bf;
+    --teal-bright: #5eead4;
+    --teal-ink: #06242f;
+    --teal-chip-text: #7ff0dd;
+
+    /* rarity */
+    --r-comun: #64748b;
+    --r-poco: #34d399;
+    --r-rara: #a335ee;
+    --r-legend: #ff8000;
+
+    /* sidebar (desktop shell) */
+    --sidebar-border-pdx: #122a3b;
+    --sidebar-item: #aac0cc;
+    --sidebar-item-hover-bg: #0e2638;
+    --sidebar-chip-bg: #0b2233;
+    --sidebar-chip-border: #15344a;
+
+    /* striped avatar placeholder */
+    --avatar-a: #15405a;
+    --avatar-b: #103349;
+
+    /* catch-photo stripe placeholders (per rarity) */
+    --photo-comun-a: #10303f;
+    --photo-comun-b: #0d2937;
+    --photo-poco-a: #0e3a32;
+    --photo-poco-b: #0c3128;
+    --photo-rara-a: #0e3346;
+    --photo-rara-b: #0c2c3d;
+    --photo-legend-a: #3a2410;
+    --photo-legend-b: #311d0c;
+
+    /* map illustration */
+    --map-base: radial-gradient(130% 90% at 25% 12%, #114660, #0a2738 55%, #061a28);
+    --map-blob1: #123247;
+    --map-blob2: #143750;
+    --map-blob3: #0f2c40;
+    --map-river: linear-gradient(90deg, #0e3a52, #1f6486, #0e3a52);
+    --map-grid: #ffffff08;
+    --map-cluster-bg: rgba(45, 212, 191, 0.92);
+    --map-cluster-ring: #e6fffb;
+    --map-cluster-ink: #06242f;
+    --minimap-from: #114660;
+    --minimap-to: #0a2738;
+
+    /* translucent "glass" overlays floating over the map / photos */
+    --glass-bg: rgba(8, 28, 40, 0.86);
+    --glass-strong: rgba(9, 28, 41, 0.94);
+    --glass-border: #1d3e54;
+
+    /* hero scrims */
+    --hero-scrim-top: rgba(7, 28, 42, 0.55);
+
+    --font-display: 'Fredoka', 'Instrument Sans', sans-serif;
+    --font-body: 'Inter', 'Instrument Sans', sans-serif;
+}
+
+:root[data-theme='light'] {
+    --studio-bg: radial-gradient(120% 90% at 80% -10%, #e9f2f6, #d7e2e8 60%);
+    --page-bg: #dfe7ec;
+    --bg-deep: #dbe6ec;
+    --bg-frame: #eef3f6;
+    --bg-frame-border: #cdd9e0;
+    --frame-inset: #ffffff;
+    --surface: #ffffff;
+    --surface-alt: #ffffff;
+    --surface-locked: #eef4f7;
+    --panel: #ffffff;
+    --banner: linear-gradient(180deg, #dceef4, #eef3f6);
+    --nav-bg: #ffffffee;
+    --nav-border: #e2eaef;
+
+    --border-pdx: #e2eaef;
+    --border-strong: #d3e0e7;
+    --hairline: #e6edf1;
+    --field-border: #dbe6ec;
+    --divider: #eaf0f3;
+    --track-bg: #dfeaef;
+    --track-border: #d0dde4;
+
+    --text: #15303d;
+    --text-muted: #5f7785;
+    --text-faint: #7c93a0;
+    --text-locked: #aebfc8;
+    --text-soft: #3d5663;
+    --text-strong: #234553;
+    --icon-muted: #7c93a0;
+
+    --teal: #0d9488;
+    --teal-bright: #2dd4bf;
+    --teal-ink: #ffffff;
+    --teal-chip-text: #0d9488;
+
+    --r-poco: #16a34a;
+
+    --sidebar-border-pdx: #d6e1e7;
+    --sidebar-item: #3d5663;
+    --sidebar-item-hover-bg: #e6eef2;
+    --sidebar-chip-bg: #ffffff;
+    --sidebar-chip-border: #e2eaef;
+
+    --avatar-a: #dde9ee;
+    --avatar-b: #cfe0e7;
+
+    --photo-comun-a: #e1e9ec;
+    --photo-comun-b: #d4dfe4;
+    --photo-poco-a: #dceee2;
+    --photo-poco-b: #cfe6d8;
+    --photo-rara-a: #dde9ee;
+    --photo-rara-b: #cfe0e7;
+    --photo-legend-a: #ffe9d2;
+    --photo-legend-b: #ffdcb8;
+
+    --map-base: radial-gradient(130% 90% at 25% 12%, #d4ecf4, #c2dfe9 55%, #b3d6e2);
+    --map-blob1: #e7eff2;
+    --map-blob2: #e2ecef;
+    --map-blob3: #e7eff2;
+    --map-river: linear-gradient(90deg, #bfe0ec, #9fd0e0, #bfe0ec);
+    --map-grid: #00000008;
+    --map-cluster-bg: #0d9488;
+    --map-cluster-ring: #ffffff;
+    --map-cluster-ink: #ffffff;
+    --minimap-from: #d4ecf4;
+    --minimap-to: #b3d6e2;
+
+    --glass-bg: rgba(255, 255, 255, 0.92);
+    --glass-strong: #ffffff;
+    --glass-border: #e0e9ee;
+
+    --hero-scrim-top: rgba(255, 255, 255, 0.3);
+}
+
+/* PescaDex app surface — applied by PescadexLayout and full-screen pages. */
+.pdx-app {
+    font-family: var(--font-body);
+    background: var(--page-bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Hide scrollbars inside scroll panels for a native feel. */
+.pdx-scroll::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+.pdx-scroll {
+    scrollbar-width: none;
+}
+
+/* ---- Keyframes used by celebration screens ---- */
+@keyframes pdx-levelpop {
+    0% { transform: scale(0.3) rotate(-18deg); opacity: 0; }
+    40% { transform: scale(1.12) rotate(4deg); opacity: 1; }
+    55% { transform: scale(0.96) rotate(-2deg); }
+    70% { transform: scale(1.03); }
+    100% { transform: scale(1) rotate(0); }
+}
+@keyframes pdx-spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes pdx-xpfill {
+    0% { width: 8%; }
+    12% { width: 8%; }
+    70% { width: 84%; }
+    100% { width: 84%; }
+}
+@keyframes pdx-confetti {
+    0% { transform: translateY(-14px) rotate(0); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translateY(360px) rotate(420deg); opacity: 0; }
+}
+@keyframes pdx-shine {
+    0% { transform: translateX(-140%) skewX(-18deg); }
+    55% { transform: translateX(240%) skewX(-18deg); }
+    100% { transform: translateX(240%) skewX(-18deg); }
+}
+@keyframes pdx-pop {
+    0% { transform: scale(0.4); opacity: 0; }
+    45% { transform: scale(1.14); opacity: 1; }
+    65% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+@keyframes pdx-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+}
+@keyframes pdx-twinkle {
+    0%, 100% { opacity: 0.25; transform: scale(0.7); }
+    50% { opacity: 1; transform: scale(1.15); }
+}

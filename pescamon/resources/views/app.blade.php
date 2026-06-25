@@ -8,14 +8,16 @@
         <script>
             (function() {
                 const appearance = '{{ $appearance ?? "system" }}';
+                let resolved = appearance;
 
                 if (appearance === 'system') {
                     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                    if (prefersDark) {
-                        document.documentElement.classList.add('dark');
-                    }
+                    resolved = prefersDark ? 'dark' : 'light';
                 }
+
+                document.documentElement.classList.toggle('dark', resolved === 'dark');
+                // Drive the PescaDex token palette (keys off [data-theme]).
+                document.documentElement.dataset.theme = resolved;
             })();
         </script>
 

@@ -2,15 +2,14 @@
 
 namespace App\Providers;
 
-use App\Events\CatchProcessed;
-use App\Listeners\AwardCatchRewards;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
 {
-    protected $listen = [
-        CatchProcessed::class => [
-            AwardCatchRewards::class,
-        ],
-    ];
+    /**
+     * Laravel auto-registers listeners in app/Listeners by convention
+     * (AwardCatchRewards type-hints CatchProcessed), so no explicit mapping
+     * is needed here — adding one would fire the listener twice.
+     */
+    protected $listen = [];
 }

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
+import Icon from '@/components/pescadex/Icon.vue';
+import RarityBadge from '@/components/pescadex/RarityBadge.vue';
 
 interface Species {
     id: number;
@@ -11,17 +13,15 @@ interface Species {
     average_weight_kg: number | null;
 }
 
-const props = defineProps<{
-    species: Species[];
-}>();
+const props = defineProps<{ species: Species[] }>();
 
 const form = useForm({
-    species_id: '',
+    species_id: '' as number | '',
     weight_kg: '',
     length_cm: '',
     caught_at: new Date().toISOString().slice(0, 16),
-    method: 'other',
-    water_body_type: 'other',
+    method: 'spinning',
+    water_body_type: 'river',
     bait_used: '',
     location_name: '',
     latitude: '',
@@ -31,7 +31,24 @@ const form = useForm({
 });
 
 const imagePreview = ref<string | null>(null);
-const gpsDetecting = ref(false);
+const gpsState = ref<'idle' | 'detecting' | 'done'>('idle');
+
+const methods = [
+    { value: 'spinning', label: 'Spinning' },
+    { value: 'fly', label: 'Mosca' },
+    { value: 'bait_casting', label: 'Bait Casting' },
+    { value: 'trolling', label: 'Trolling' },
+    { value: 'other', label: 'Otro' },
+];
+const waters = [
+    { value: 'river', label: 'Río' },
+    { value: 'lake', label: 'Lago' },
+    { value: 'sea', label: 'Mar' },
+    { value: 'reservoir', label: 'Embalse' },
+    { value: 'other', label: 'Otro' },
+];
+
+const selectedSpecies = computed(() => props.species.find((s) => s.id === Number(form.species_id)));
 
 function onImageChange(e: Event) {
     const file = (e.target as HTMLInputElement).files?.[0];
@@ -41,199 +58,387 @@ function onImageChange(e: Event) {
 }
 
 function detectGps() {
-    gpsDetecting.value = true;
+    if (!navigator.geolocation) return;
+    gpsState.value = 'detecting';
     navigator.geolocation.getCurrentPosition(
         (pos) => {
             form.latitude = pos.coords.latitude.toFixed(7);
             form.longitude = pos.coords.longitude.toFixed(7);
-            gpsDetecting.value = false;
+            gpsState.value = 'done';
         },
         () => {
-            gpsDetecting.value = false;
+            gpsState.value = 'idle';
         },
     );
 }
 
-const selectedSpecies = computed(() => props.species.find((s) => s.id === Number(form.species_id)));
-
-const rarityBadge: Record<string, string> = {
-    common: 'bg-gray-100 text-gray-700',
-    uncommon: 'bg-emerald-100 text-emerald-700',
-    rare: 'bg-blue-100 text-blue-700',
-    legendary: 'bg-amber-100 text-amber-700',
-};
-
-function submit() {
-    form.post('/catches', {
-        forceFormData: true,
-    });
+function save() {
+    form.post('/catches', { forceFormData: true });
 }
 </script>
 
 <template>
-    <Head title="Nueva Captura" />
+    <Head title="Nueva captura" />
 
-    <div class="mx-auto max-w-2xl px-4 py-8">
-        <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Registrar Captura</h1>
+    <div class="appbar-pad">
+        <div class="top-gap" />
+        <div class="appbar">
+            <button class="icon-btn" @click="router.visit('/dashboard')"><Icon name="x" :size="23" color="var(--icon-muted)" /></button>
+            <span class="title">Nueva captura</span>
+        </div>
+    </div>
 
-        <form @submit.prevent="submit" class="space-y-6">
-            <!-- Image upload -->
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Foto de la captura *</label>
-                <div
-                    class="flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 p-4 transition hover:border-blue-400 dark:border-gray-600"
-                    @click="($refs.fileInput as HTMLInputElement).click()"
-                >
-                    <img v-if="imagePreview" :src="imagePreview" class="max-h-64 rounded-lg object-cover" />
-                    <template v-else>
-                        <span class="text-4xl">📷</span>
-                        <p class="mt-2 text-sm text-gray-500">Haz clic para subir una foto (JPG/PNG, máx 10 MB)</p>
-                    </template>
-                </div>
-                <input ref="fileInput" type="file" accept="image/jpeg,image/png" class="hidden" @change="onImageChange" />
-                <p v-if="form.errors.image" class="mt-1 text-sm text-red-600">{{ form.errors.image }}</p>
+    <div class="body">
+        <!-- photo -->
+        <label class="photo">
+            <img v-if="imagePreview" :src="imagePreview" class="photo-img" alt="captura" />
+            <template v-else>
+                <Icon name="camera" :size="26" color="var(--text-faint)" />
+                <span class="photo-label">Toca para añadir foto</span>
+            </template>
+            <input type="file" accept="image/jpeg,image/png" class="file-input" @change="onImageChange" />
+        </label>
+        <p v-if="form.errors.image" class="err">{{ form.errors.image }}</p>
+
+        <!-- record banner -->
+        <div v-if="selectedSpecies" class="record-banner">
+            <Icon name="fish" :size="20" color="var(--accent-pdx)" />
+            <div class="rb-text">
+                <b>{{ selectedSpecies.name }}</b>
+                <span v-if="selectedSpecies.average_weight_kg"> · promedio {{ selectedSpecies.average_weight_kg }} kg</span>
             </div>
+            <RarityBadge :rarity="selectedSpecies.rarity" variant="outline" />
+        </div>
 
-            <!-- Species selector -->
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Especie *</label>
-                <select v-model="form.species_id" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                    <option value="">-- Selecciona una especie --</option>
-                    <option v-for="s in species" :key="s.id" :value="s.id">{{ s.name }} ({{ s.scientific_name }})</option>
+        <!-- especie -->
+        <div class="field">
+            <div class="label">Especie</div>
+            <div class="select-wrap">
+                <Icon name="fish" :size="20" color="var(--teal)" />
+                <select v-model="form.species_id" class="native-select">
+                    <option value="" disabled>Selecciona una especie</option>
+                    <option v-for="s in species" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </select>
-                <div v-if="selectedSpecies" class="mt-1 flex items-center gap-2">
-                    <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold capitalize', rarityBadge[selectedSpecies.rarity]]">
-                        {{ selectedSpecies.rarity }}
-                    </span>
-                    <span v-if="selectedSpecies.average_weight_kg" class="text-xs text-gray-500">
-                        Peso promedio: {{ selectedSpecies.average_weight_kg }} kg
-                    </span>
-                </div>
-                <p v-if="form.errors.species_id" class="mt-1 text-sm text-red-600">{{ form.errors.species_id }}</p>
+                <Icon name="chevron-down" :size="18" color="var(--text-faint)" />
             </div>
+            <p v-if="form.errors.species_id" class="err">{{ form.errors.species_id }}</p>
+        </div>
 
-            <!-- Weight & Length -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Peso (kg) *</label>
-                    <input
-                        v-model="form.weight_kg"
-                        type="number"
-                        step="0.001"
-                        min="0"
-                        placeholder="ej. 2.350"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    />
-                    <p v-if="form.errors.weight_kg" class="mt-1 text-sm text-red-600">{{ form.errors.weight_kg }}</p>
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Longitud (cm)</label>
-                    <input
-                        v-model="form.length_cm"
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        placeholder="ej. 45.5"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    />
-                </div>
+        <!-- peso / longitud -->
+        <div class="two">
+            <div class="field">
+                <div class="label">Peso</div>
+                <label class="num">
+                    <input v-model="form.weight_kg" type="number" step="0.1" inputmode="decimal" placeholder="0.0" />
+                    <span class="unit">kg</span>
+                </label>
+                <p v-if="form.errors.weight_kg" class="err">{{ form.errors.weight_kg }}</p>
             </div>
-
-            <!-- Date & Method -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha y hora *</label>
-                    <input
-                        v-model="form.caught_at"
-                        type="datetime-local"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    />
-                    <p v-if="form.errors.caught_at" class="mt-1 text-sm text-red-600">{{ form.errors.caught_at }}</p>
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Técnica *</label>
-                    <select v-model="form.method" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <option value="spinning">Spinning</option>
-                        <option value="fly">Mosca (Fly)</option>
-                        <option value="bait_casting">Bait Casting</option>
-                        <option value="trolling">Trolling</option>
-                        <option value="other">Otro</option>
-                    </select>
-                </div>
+            <div class="field">
+                <div class="label">Longitud</div>
+                <label class="num">
+                    <input v-model="form.length_cm" type="number" inputmode="decimal" placeholder="—" />
+                    <span class="unit">cm</span>
+                </label>
             </div>
+        </div>
 
-            <!-- Water body & Bait -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de agua *</label>
-                    <select v-model="form.water_body_type" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <option value="river">Río</option>
-                        <option value="lake">Lago</option>
-                        <option value="sea">Mar</option>
-                        <option value="reservoir">Embalse</option>
-                        <option value="other">Otro</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Cebo / señuelo</label>
-                    <input
-                        v-model="form.bait_used"
-                        type="text"
-                        placeholder="ej. Gusano, Cuchara plateada..."
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    />
-                </div>
-            </div>
+        <!-- fecha -->
+        <div class="field">
+            <div class="label">Fecha y hora</div>
+            <input v-model="form.caught_at" type="datetime-local" class="text-input" />
+            <p v-if="form.errors.caught_at" class="err">{{ form.errors.caught_at }}</p>
+        </div>
 
-            <!-- Location -->
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ubicación</label>
-                <div class="flex gap-2">
-                    <input
-                        v-model="form.location_name"
-                        type="text"
-                        placeholder="Nombre del lugar (opcional)"
-                        class="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    />
-                    <button
-                        type="button"
-                        @click="detectGps"
-                        :disabled="gpsDetecting"
-                        class="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:hover:bg-gray-700"
-                    >
-                        {{ gpsDetecting ? '...' : '📍 GPS' }}
-                    </button>
-                </div>
-                <div v-if="form.latitude && form.longitude" class="mt-1 text-xs text-emerald-600">
-                    ✓ Coordenadas: {{ form.latitude }}, {{ form.longitude }}
-                </div>
-                <p class="mt-1 text-xs text-gray-400">
-                    Si la foto tiene GPS en los metadatos EXIF, se extraerá automáticamente.
-                </p>
-            </div>
+        <!-- ubicación -->
+        <div class="field">
+            <div class="label">Ubicación</div>
+            <input v-model="form.location_name" type="text" class="text-input" placeholder="Ej. Embalse del Atazar" />
+            <button type="button" class="gps" :class="{ on: gpsState === 'done' }" @click="detectGps">
+                <Icon name="locate-fixed" :size="14" :color="gpsState === 'done' ? 'var(--teal)' : 'var(--text-faint)'" />
+                <span v-if="gpsState === 'idle'">Detectar con GPS</span>
+                <span v-else-if="gpsState === 'detecting'">Detectando…</span>
+                <span v-else>Ubicación detectada ✓</span>
+            </button>
+        </div>
 
-            <!-- Notes -->
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Notas</label>
-                <textarea
-                    v-model="form.notes"
-                    rows="3"
-                    placeholder="Condiciones del agua, hora del día, anécdotas..."
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                />
-            </div>
-
-            <!-- Submit -->
-            <div class="flex items-center gap-4">
+        <!-- método -->
+        <div class="field">
+            <div class="label">Método</div>
+            <div class="chips">
                 <button
-                    type="submit"
-                    :disabled="form.processing"
-                    class="rounded-lg bg-blue-600 px-6 py-2.5 font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                    v-for="m in methods"
+                    :key="m.value"
+                    type="button"
+                    class="chip"
+                    :class="{ active: form.method === m.value }"
+                    @click="form.method = m.value"
                 >
-                    {{ form.processing ? 'Enviando...' : 'Registrar captura' }}
+                    {{ m.label }}
                 </button>
-                <p class="text-xs text-gray-500">La captura quedará pendiente de verificación.</p>
             </div>
-        </form>
+        </div>
+
+        <!-- agua -->
+        <div class="field">
+            <div class="label">Tipo de agua</div>
+            <div class="chips">
+                <button
+                    v-for="w in waters"
+                    :key="w.value"
+                    type="button"
+                    class="chip"
+                    :class="{ active: form.water_body_type === w.value }"
+                    @click="form.water_body_type = w.value"
+                >
+                    {{ w.label }}
+                </button>
+            </div>
+        </div>
+
+        <!-- cebo / notas -->
+        <div class="field">
+            <div class="label">Cebo (opcional)</div>
+            <input v-model="form.bait_used" type="text" class="text-input" placeholder="Ej. vinilo, mosca seca…" />
+        </div>
+        <div class="field">
+            <div class="label">Notas (opcional)</div>
+            <textarea v-model="form.notes" class="text-input" rows="2" placeholder="Condiciones, anécdota…" />
+        </div>
+    </div>
+
+    <div class="save-bar">
+        <button class="save" :disabled="form.processing" @click="save">
+            <Icon name="check" :size="20" /> {{ form.processing ? 'Guardando…' : 'Guardar captura' }}
+        </button>
     </div>
 </template>
+
+<style scoped>
+.appbar-pad {
+    padding: 0 18px;
+}
+.top-gap {
+    height: 16px;
+}
+.appbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0 10px;
+}
+.icon-btn {
+    background: none;
+    border: 0;
+    padding: 0;
+    display: flex;
+}
+.title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 19px;
+    color: var(--text);
+}
+.body {
+    padding: 4px 18px;
+}
+.photo {
+    position: relative;
+    height: 160px;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px dashed var(--track-border);
+    background: var(--surface-locked);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+}
+.photo-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.photo-label {
+    font-size: 12.5px;
+    color: var(--text-faint);
+}
+.file-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+.record-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    background: linear-gradient(90deg, rgba(245, 165, 36, 0.2), rgba(245, 165, 36, 0.06));
+    border: 1px solid rgba(245, 165, 36, 0.5);
+    border-radius: 14px;
+    padding: 11px 13px;
+}
+.rb-text {
+    flex: 1;
+    font-size: 12.5px;
+    color: var(--text);
+}
+.rb-text b {
+    font-family: var(--font-display);
+    color: var(--accent-pdx);
+}
+.rb-text span {
+    color: #cdb98a;
+}
+.field {
+    margin-top: 16px;
+}
+.field .label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 7px;
+}
+.select-wrap {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    background: var(--surface-alt);
+    border: 1px solid var(--field-border);
+    border-radius: 13px;
+    padding: 4px 14px;
+}
+.native-select {
+    flex: 1;
+    background: none;
+    border: 0;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 15px;
+    padding: 11px 0;
+    appearance: none;
+}
+.native-select option {
+    color: #15303d;
+}
+.two {
+    display: flex;
+    gap: 11px;
+}
+.two .field {
+    flex: 1;
+}
+.num {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    background: var(--surface-alt);
+    border: 1px solid var(--field-border);
+    border-radius: 13px;
+    padding: 13px 14px;
+}
+.num input {
+    width: 100%;
+    background: none;
+    border: 0;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 18px;
+}
+.num input::-webkit-outer-spin-button,
+.num input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.unit {
+    color: var(--text-faint);
+    font-size: 13px;
+}
+.text-input {
+    width: 100%;
+    background: var(--surface-alt);
+    border: 1px solid var(--field-border);
+    border-radius: 13px;
+    padding: 13px 14px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    resize: vertical;
+}
+.gps {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-faint);
+    background: none;
+    border: 0;
+}
+.gps.on {
+    color: var(--teal);
+}
+.chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.chip {
+    padding: 9px 15px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    color: var(--icon-muted);
+    font-size: 13px;
+    font-weight: 600;
+    background: none;
+    font-family: inherit;
+}
+.chip.active {
+    background: rgba(45, 212, 191, 0.16);
+    border-color: rgba(45, 212, 191, 0.5);
+    color: var(--teal-chip-text);
+}
+.err {
+    color: #f08a90;
+    font-size: 11.5px;
+    margin-top: 5px;
+}
+.save-bar {
+    position: sticky;
+    bottom: 0;
+    padding: 14px 18px calc(20px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, transparent, var(--bg-frame) 28%);
+}
+.save {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    background: var(--accent-pdx);
+    color: var(--accent-ink);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+    padding: 15px;
+    border: 0;
+    border-radius: 16px;
+    box-shadow: 0 12px 28px rgba(245, 165, 36, 0.45);
+}
+.save:disabled {
+    opacity: 0.6;
+}
+</style>

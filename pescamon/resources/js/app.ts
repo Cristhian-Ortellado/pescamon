@@ -1,13 +1,17 @@
-import { createApp, createSSRApp } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { createPinia } from 'pinia';
+import { createApp, createSSRApp } from 'vue';
 import { initializeTheme } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
+import PescadexLayout from '@/layouts/PescadexLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+// Settings form pages keep the original shadcn settings shell.
+const legacySettings = ['settings/Profile', 'settings/Security', 'settings/Appearance'];
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -17,10 +21,11 @@ createInertiaApp({
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
-            case name.startsWith('settings/'):
+            case legacySettings.includes(name):
                 return [AppLayout, SettingsLayout];
             default:
-                return AppLayout;
+                // All PescaDex app screens render inside the studio shell.
+                return PescadexLayout;
         }
     },
     progress: {
@@ -28,7 +33,8 @@ createInertiaApp({
     },
     setup({ el, App, props, plugin }) {
         // Use createSSRApp on the server (el is null there) and createApp in the browser.
-        // @ts-ignore
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
         const app = import.meta.env.SSR ? createSSRApp(App, props) : createApp(App, props);
 
         app.use(plugin).use(createPinia());

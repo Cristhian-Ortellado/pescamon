@@ -5,9 +5,6 @@ namespace App\Listeners;
 use App\Events\CatchProcessed;
 use App\Services\AchievementService;
 use App\Services\LevelingService;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\DatabaseNotification;
-use Illuminate\Support\Facades\Notification;
 
 /**
  * Runs after a catch image is processed.
@@ -17,8 +14,11 @@ use Illuminate\Support\Facades\Notification;
  *  - Awards XP via LevelingService
  *  - Checks and unlocks achievements via AchievementService
  *  - Sends an in-app database notification to the user
+ *
+ * Runs synchronously (not queued) so the reward is ready by the time the
+ * user lands on the catch page after upload.
  */
-class AwardCatchRewards implements ShouldQueue
+class AwardCatchRewards
 {
     public function __construct(
         private readonly LevelingService $levelingService,
@@ -40,11 +40,17 @@ class AwardCatchRewards implements ShouldQueue
 
         $catch->update(['is_personal_best' => $reward['is_personal_best']]);
 
-        // Award XP and check for level-up
-        $levelsGained = $this->levelingService->addXp($user, $reward['xp']);
+        // Track level before any XP so we can detect a level-up across both the
+        // catch reward AND any achievement rewards awarded below.
+        $levelBefore = $user->level;
 
-        // Check achievements
+        // Award XP and check for level-up
+        $this->levelingService->addXp($user, $reward['xp']);
+
+        // Check achievements (each unlock also awards its XP)
         $newAchievements = $this->achievementService->checkAfterCatch($user, $catch);
+
+        $levelsGained = $user->level - $levelBefore;
 
         // Build a summary notification message
         $messages = ["+{$reward['xp']} XP por tu captura de {$catch->species->name}"];
@@ -65,12 +71,21 @@ class AwardCatchRewards implements ShouldQueue
             $messages[] = "Logro desbloqueado: {$achievement->name}";
         }
 
+        // Structured achievement payload drives the celebration overlay.
+        $achievementsData = array_map(fn ($a) => [
+            'name' => $a->name,
+            'description' => $a->description,
+            'xp' => $a->xp_reward,
+        ], $newAchievements);
+
         // Store as a standard Laravel database notification
         $user->notify(new \App\Notifications\CatchRewardNotification(
             $catch,
             $messages,
             $reward['xp'],
             $levelsGained > 0,
+            $user->level,
+            $achievementsData,
         ));
     }
 }

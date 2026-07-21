@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { useAppearance } from '@/composables/useAppearance';
-import Icon from '@/components/pescadex/Icon.vue';
+import { computed } from 'vue';
 import BottomNav from '@/components/pescadex/BottomNav.vue';
 import CelebrationHost from '@/components/pescadex/CelebrationHost.vue';
+import Icon from '@/components/pescadex/Icon.vue';
+import { Toaster } from '@/components/ui/sonner';
+import { useAppearance } from '@/composables/useAppearance';
 
 interface AuthUser {
     id: number;
@@ -15,7 +16,9 @@ interface AuthUser {
 
 const page = usePage();
 const user = computed(() => (page.props.auth as { user: AuthUser }).user);
-const handle = computed(() => '@' + (user.value?.email?.split('@')[0] ?? 'pescador'));
+const handle = computed(
+    () => '@' + (user.value?.email?.split('@')[0] ?? 'pescador'),
+);
 
 const { resolvedAppearance, updateAppearance } = useAppearance();
 const isDark = computed(() => resolvedAppearance.value === 'dark');
@@ -40,7 +43,9 @@ function isActive(href: string) {
     <div class="studio pdx-app">
         <aside class="sidebar">
             <Link href="/dashboard" class="brand">
-                <div class="brand-mark"><Icon name="fish" :size="20" color="var(--accent-ink)" /></div>
+                <div class="brand-mark">
+                    <Icon name="fish" :size="20" color="var(--accent-ink)" />
+                </div>
                 <span class="brand-name">PescaDex</span>
             </Link>
 
@@ -55,11 +60,19 @@ function isActive(href: string) {
                     <Icon :name="item.icon" :size="20" />
                     <span>{{ item.label }}</span>
                 </Link>
-                <Link href="/achievements" class="nav-item" :class="{ active: isActive('/achievements') }">
+                <Link
+                    href="/achievements"
+                    class="nav-item"
+                    :class="{ active: isActive('/achievements') }"
+                >
                     <Icon name="award" :size="20" />
                     <span>Logros</span>
                 </Link>
-                <Link href="/notifications" class="nav-item" :class="{ active: isActive('/notifications') }">
+                <Link
+                    href="/notifications"
+                    class="nav-item"
+                    :class="{ active: isActive('/notifications') }"
+                >
                     <Icon name="bell" :size="20" />
                     <span>Notificaciones</span>
                 </Link>
@@ -77,7 +90,9 @@ function isActive(href: string) {
             </button>
 
             <Link href="/profile" class="user-chip">
-                <div class="chip-avatar"><span class="chip-level">{{ user?.level ?? 1 }}</span></div>
+                <div class="chip-avatar">
+                    <span class="chip-level">{{ user?.level ?? 1 }}</span>
+                </div>
                 <div class="chip-text">
                     <div class="chip-name">{{ user?.name }}</div>
                     <div class="chip-handle">{{ handle }}</div>
@@ -93,6 +108,7 @@ function isActive(href: string) {
 
         <BottomNav />
         <CelebrationHost />
+        <Toaster />
     </div>
 </template>
 
@@ -225,7 +241,13 @@ function isActive(href: string) {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: repeating-linear-gradient(135deg, var(--avatar-a), var(--avatar-a) 5px, var(--avatar-b) 5px, var(--avatar-b) 10px);
+    background: repeating-linear-gradient(
+        135deg,
+        var(--avatar-a),
+        var(--avatar-a) 5px,
+        var(--avatar-b) 5px,
+        var(--avatar-b) 10px
+    );
     border: 2px solid var(--teal);
     flex: none;
 }

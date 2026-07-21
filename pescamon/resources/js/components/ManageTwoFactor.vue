@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
-import { ShieldCheck } from '@lucide/vue';
 import { onUnmounted, ref } from 'vue';
-import Heading from '@/components/Heading.vue';
+import Icon from '@/components/pescadex/Icon.vue';
 import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
-import { Button } from '@/components/ui/button';
 import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
 import { disable, enable } from '@/routes/two-factor';
 
@@ -28,66 +26,127 @@ onUnmounted(() => clearTwoFactorAuthData());
 </script>
 
 <template>
-    <div v-if="canManageTwoFactor" class="space-y-6">
-        <Heading
-            variant="small"
-            title="Two-factor authentication"
-            description="Manage your two-factor authentication settings"
-        />
+    <template v-if="canManageTwoFactor">
+        <div class="group-label plain">Autenticación en dos pasos</div>
+        <div class="card">
+            <div class="card-body">
+                <template v-if="!twoFactorEnabled">
+                    <p class="section-desc">
+                        Al activar la autenticación en dos pasos, se te pedirá
+                        un PIN seguro al iniciar sesión, generado por una app
+                        TOTP en tu teléfono.
+                    </p>
 
-        <div
-            v-if="!twoFactorEnabled"
-            class="flex flex-col items-start justify-start space-y-4"
-        >
-            <p class="text-sm text-muted-foreground">
-                When you enable two-factor authentication, you will be prompted
-                for a secure pin during login. This pin can be retrieved from a
-                TOTP-supported application on your phone.
-            </p>
-
-            <div>
-                <Button v-if="hasSetupData" @click="showSetupModal = true">
-                    <ShieldCheck />Continue setup
-                </Button>
-                <Form
-                    v-else
-                    v-bind="enable.form()"
-                    @success="showSetupModal = true"
-                    #default="{ processing }"
-                >
-                    <Button type="submit" :disabled="processing">
-                        Enable 2FA
-                    </Button>
-                </Form>
-            </div>
-        </div>
-
-        <div v-else class="flex flex-col items-start justify-start space-y-4">
-            <p class="text-sm text-muted-foreground">
-                You will be prompted for a secure, random pin during login,
-                which you can retrieve from the TOTP-supported application on
-                your phone.
-            </p>
-
-            <div class="relative inline">
-                <Form v-bind="disable.form()" #default="{ processing }">
-                    <Button
-                        variant="destructive"
-                        type="submit"
-                        :disabled="processing"
+                    <button
+                        v-if="hasSetupData"
+                        type="button"
+                        class="action-btn"
+                        @click="showSetupModal = true"
                     >
-                        Disable 2FA
-                    </Button>
-                </Form>
-            </div>
+                        <Icon name="shield" :size="17" /> Continuar
+                        configuración
+                    </button>
+                    <Form
+                        v-else
+                        v-bind="enable.form()"
+                        @success="showSetupModal = true"
+                        #default="{ processing }"
+                    >
+                        <button
+                            type="submit"
+                            class="action-btn"
+                            :disabled="processing"
+                        >
+                            <Icon name="shield" :size="17" /> Activar 2FA
+                        </button>
+                    </Form>
+                </template>
 
-            <TwoFactorRecoveryCodes />
+                <template v-else>
+                    <p class="section-desc">
+                        Se te pedirá un PIN seguro y aleatorio al iniciar
+                        sesión, generado por la app TOTP de tu teléfono.
+                    </p>
+
+                    <Form v-bind="disable.form()" #default="{ processing }">
+                        <button
+                            type="submit"
+                            class="danger-btn"
+                            :disabled="processing"
+                        >
+                            Desactivar 2FA
+                        </button>
+                    </Form>
+                </template>
+            </div>
         </div>
+
+        <TwoFactorRecoveryCodes v-if="twoFactorEnabled" />
 
         <TwoFactorSetupModal
             v-model:isOpen="showSetupModal"
             :requiresConfirmation="requiresConfirmation"
             :twoFactorEnabled="twoFactorEnabled"
         />
-    </div>
+    </template>
 </template>
+
+<style scoped>
+.group-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding: 14px 20px 10px;
+}
+.group-label.plain {
+    padding-top: 18px;
+}
+.card {
+    margin: 0 20px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border-pdx);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.card-body {
+    padding: 16px 15px 18px;
+}
+.section-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 14px;
+}
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-pdx);
+    color: var(--accent-ink);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 11px 20px;
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(245, 165, 36, 0.32);
+}
+.action-btn:disabled {
+    opacity: 0.6;
+}
+.danger-btn {
+    background: none;
+    border: 1px solid #a34751;
+    color: #e2737a;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13.5px;
+    padding: 10px 18px;
+    border-radius: 11px;
+}
+.danger-btn:disabled {
+    opacity: 0.6;
+}
+</style>

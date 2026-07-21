@@ -1,105 +1,435 @@
 <script setup lang="ts">
-import { Form, Head, usePage } from '@inertiajs/vue3';
-import { Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
-import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import DeleteUser from '@/components/DeleteUser.vue';
-import Heading from '@/components/Heading.vue';
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { edit } from '@/routes/profile';
-import { send } from '@/routes/verification';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, nextTick, ref, useTemplateRef } from 'vue';
+import Icon from '@/components/pescadex/Icon.vue';
 
-defineOptions({
-    layout: {
-        breadcrumbs: [
-            {
-                title: 'Profile settings',
-                href: edit(),
-            },
-        ],
-    },
-});
+defineProps<{
+    mustVerifyEmail: boolean;
+    status?: string;
+}>();
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+
+const form = useForm({
+    name: user.value.name,
+    email: user.value.email,
+});
+
+function save() {
+    form.patch('/settings/profile', { preserveScroll: true });
+}
+
+function resendVerification() {
+    router.post(
+        '/email/verification-notification',
+        {},
+        { preserveScroll: true },
+    );
+}
+
+const showDelete = ref(false);
+const passwordInput = useTemplateRef<HTMLInputElement>('passwordInput');
+const deleteForm = useForm({ password: '' });
+
+function openDelete() {
+    showDelete.value = true;
+    nextTick(() => passwordInput.value?.focus());
+}
+function closeDelete() {
+    showDelete.value = false;
+    deleteForm.reset();
+    deleteForm.clearErrors();
+}
+function confirmDelete() {
+    deleteForm.delete('/settings/profile', {
+        preserveScroll: true,
+        onError: () => passwordInput.value?.focus(),
+    });
+}
 </script>
 
 <template>
-    <Head title="Profile settings" />
+    <Head title="Editar perfil" />
 
-    <h1 class="sr-only">Profile settings</h1>
+    <div class="head">
+        <div class="top-gap" />
+        <div class="app-bar">
+            <button class="ic" @click="router.visit('/settings')">
+                <Icon name="arrow-left" :size="23" color="var(--icon-muted)" />
+            </button>
+            <span class="title">Editar perfil</span>
+        </div>
+    </div>
 
-    <div class="flex flex-col space-y-6">
-        <Heading
-            variant="small"
-            title="Profile"
-            description="Update your name and email address"
-        />
-
-        <Form
-            v-bind="ProfileController.update.form()"
-            class="space-y-6"
-            v-slot="{ errors, processing }"
-        >
-            <div class="grid gap-2">
-                <Label for="name">Name</Label>
-                <Input
-                    id="name"
-                    class="mt-1 block w-full"
-                    name="name"
-                    :default-value="user.name"
-                    required
-                    autocomplete="name"
-                    placeholder="Full name"
-                />
-                <InputError class="mt-2" :message="errors.name" />
-            </div>
-
-            <div class="grid gap-2">
-                <Label for="email">Email address</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    name="email"
-                    :default-value="user.email"
-                    required
-                    autocomplete="username"
-                    placeholder="Email address"
-                />
-                <InputError class="mt-2" :message="errors.email" />
-            </div>
-
-            <div v-if="page.props.mustVerifyEmail && !user.email_verified_at">
-                <p class="-mt-4 text-sm text-muted-foreground">
-                    Your email address is unverified.
-                    <Link
-                        :href="send()"
-                        as="button"
-                        class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
-                    >
-                        Click here to re-send the verification email.
-                    </Link>
+    <div class="group-label plain">Datos personales</div>
+    <div class="card">
+        <div class="card-body">
+            <div class="field">
+                <div class="label">Nombre</div>
+                <div class="input-wrap">
+                    <Icon name="user" :size="18" color="var(--text-faint)" />
+                    <input
+                        v-model="form.name"
+                        type="text"
+                        class="native-input"
+                        name="name"
+                        autocomplete="name"
+                        placeholder="Tu nombre"
+                    />
+                </div>
+                <p v-if="form.errors.name" class="err">
+                    {{ form.errors.name }}
                 </p>
+            </div>
 
-                <div
-                    v-if="page.props.status === 'verification-link-sent'"
-                    class="mt-2 text-sm font-medium text-green-600"
-                >
-                    A new verification link has been sent to your email address.
+            <div class="field">
+                <div class="label">Correo electrónico</div>
+                <div class="input-wrap">
+                    <Icon name="mail" :size="18" color="var(--text-faint)" />
+                    <input
+                        v-model="form.email"
+                        type="email"
+                        class="native-input"
+                        name="email"
+                        autocomplete="username"
+                        placeholder="tucorreo@ejemplo.com"
+                    />
+                </div>
+                <p v-if="form.errors.email" class="err">
+                    {{ form.errors.email }}
+                </p>
+            </div>
+
+            <div
+                v-if="mustVerifyEmail && !user.email_verified_at"
+                class="verify-note"
+            >
+                <Icon name="mail" :size="15" color="var(--accent-pdx)" />
+                <div class="verify-text">
+                    Tu correo no está verificado.
+                    <button
+                        type="button"
+                        class="link-btn"
+                        @click="resendVerification"
+                    >
+                        Reenviar verificación
+                    </button>
+                    <div
+                        v-if="status === 'verification-link-sent'"
+                        class="verify-sent"
+                    >
+                        Enlace de verificación enviado.
+                    </div>
                 </div>
             </div>
 
-            <div class="flex items-center gap-4">
-                <Button :disabled="processing" data-test="update-profile-button"
-                    >Save</Button
-                >
-            </div>
-        </Form>
+            <button class="save" :disabled="form.processing" @click="save">
+                <Icon name="check" :size="19" />
+                {{ form.processing ? 'Guardando…' : 'Guardar cambios' }}
+            </button>
+        </div>
     </div>
 
-    <DeleteUser />
+    <div class="group-label plain">Zona de peligro</div>
+    <div class="card danger-card">
+        <div class="danger-text">
+            <div class="danger-title">Eliminar cuenta</div>
+            <div class="danger-desc">
+                Esta acción es permanente: se borrarán tus capturas, logros y
+                datos de perfil.
+            </div>
+        </div>
+        <button
+            class="danger-btn"
+            data-test="delete-user-button"
+            @click="openDelete"
+        >
+            Eliminar cuenta
+        </button>
+    </div>
+
+    <div class="bottom-spacer" />
+
+    <div v-if="showDelete" class="modal-backdrop" @click.self="closeDelete">
+        <div class="modal">
+            <div class="modal-title">¿Eliminar tu cuenta?</div>
+            <div class="modal-desc">
+                Esta acción no se puede deshacer. Introduce tu contraseña para
+                confirmar.
+            </div>
+
+            <div class="field">
+                <div class="input-wrap">
+                    <Icon name="lock" :size="18" color="var(--text-faint)" />
+                    <input
+                        ref="passwordInput"
+                        v-model="deleteForm.password"
+                        type="password"
+                        class="native-input"
+                        name="password"
+                        autocomplete="current-password"
+                        placeholder="Contraseña"
+                        @keyup.enter="confirmDelete"
+                    />
+                </div>
+                <p v-if="deleteForm.errors.password" class="err">
+                    {{ deleteForm.errors.password }}
+                </p>
+            </div>
+
+            <div class="modal-actions">
+                <button class="modal-cancel" @click="closeDelete">
+                    Cancelar
+                </button>
+                <button
+                    class="modal-confirm"
+                    data-test="confirm-delete-user-button"
+                    :disabled="deleteForm.processing"
+                    @click="confirmDelete"
+                >
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
+
+<style scoped>
+.head {
+    padding: 0 20px;
+}
+.top-gap {
+    height: 16px;
+}
+.app-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0 8px;
+}
+.ic {
+    background: none;
+    border: 0;
+    padding: 0;
+    display: flex;
+}
+.title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 21px;
+    color: var(--text);
+}
+.group-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding: 14px 20px 10px;
+}
+.group-label.plain {
+    padding-top: 18px;
+}
+.card {
+    margin: 0 20px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border-pdx);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.card-body {
+    padding: 16px 15px 18px;
+}
+.field {
+    margin-top: 16px;
+}
+.field:first-child {
+    margin-top: 0;
+}
+.field .label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 7px;
+}
+.input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    background: var(--surface);
+    border: 1px solid var(--field-border);
+    border-radius: 13px;
+    padding: 4px 14px;
+}
+.native-input {
+    flex: 1;
+    width: 100%;
+    background: none;
+    border: 0;
+    outline: none;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14.5px;
+    padding: 12px 0;
+}
+.native-input::placeholder {
+    color: var(--text-faint);
+}
+.err {
+    color: #f08a90;
+    font-size: 11.5px;
+    margin-top: 5px;
+}
+.verify-note {
+    display: flex;
+    gap: 9px;
+    margin-top: 16px;
+    padding: 11px 13px;
+    background: linear-gradient(
+        90deg,
+        rgba(245, 165, 36, 0.14),
+        rgba(245, 165, 36, 0.05)
+    );
+    border: 1px solid rgba(245, 165, 36, 0.4);
+    border-radius: 13px;
+}
+.verify-text {
+    font-size: 12.5px;
+    color: var(--text-soft);
+    line-height: 1.5;
+}
+.link-btn {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--teal);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.verify-sent {
+    margin-top: 4px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--teal);
+}
+.save {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 20px;
+    background: var(--accent-pdx);
+    color: var(--accent-ink);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 15px;
+    padding: 13px;
+    border: 0;
+    border-radius: 13px;
+    box-shadow: 0 10px 24px rgba(245, 165, 36, 0.35);
+}
+.save:disabled {
+    opacity: 0.6;
+}
+.danger-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 15px 18px;
+}
+.danger-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14.5px;
+    color: #e2737a;
+}
+.danger-desc {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.5;
+}
+.danger-btn {
+    align-self: flex-start;
+    background: none;
+    border: 1px solid #a34751;
+    color: #e2737a;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13.5px;
+    padding: 10px 18px;
+    border-radius: 11px;
+}
+.bottom-spacer {
+    height: 40px;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--glass-bg);
+}
+.modal {
+    width: 100%;
+    max-width: 340px;
+    background: var(--surface-alt);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    padding: 20px;
+}
+.modal-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--text);
+}
+.modal-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    line-height: 1.5;
+}
+.modal .field {
+    margin-top: 16px;
+}
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+.modal-cancel,
+.modal-confirm {
+    flex: 1;
+    text-align: center;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 0;
+}
+.modal-cancel {
+    background: var(--track-bg);
+    color: var(--text-soft);
+    border: 1px solid var(--track-border);
+}
+.modal-confirm {
+    background: #e2737a;
+    color: #2b0a0d;
+}
+.modal-confirm:disabled {
+    opacity: 0.6;
+}
+</style>

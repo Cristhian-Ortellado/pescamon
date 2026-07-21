@@ -11,13 +11,16 @@ import { initializeFlashToast } from '@/lib/flashToast';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 // Settings form pages keep the original shadcn settings shell.
-const legacySettings = ['settings/Profile', 'settings/Security', 'settings/Appearance'];
+const legacySettings = ['settings/Appearance'];
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
             case name === 'Welcome':
+            case name === 'auth/Login':
+                // Branded, unwrapped PescaDex screens that build their own
+                // full-page shell instead of the shared auth card.
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
@@ -35,7 +38,9 @@ createInertiaApp({
         // Use createSSRApp on the server (el is null there) and createApp in the browser.
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
-        const app = import.meta.env.SSR ? createSSRApp(App, props) : createApp(App, props);
+        const app = import.meta.env.SSR
+            ? createSSRApp(App, props)
+            : createApp(App, props);
 
         app.use(plugin).use(createPinia());
 

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { FunctionalComponent } from 'vue';
 import {
     Anchor,
     Apple,
@@ -15,6 +13,7 @@ import {
     ChevronRight,
     Circle,
     Crown,
+    Eye,
     EyeOff,
     Fish,
     Flame,
@@ -22,6 +21,7 @@ import {
     Heart,
     Image,
     Inbox,
+    KeyRound,
     LayoutGrid,
     LocateFixed,
     Lock,
@@ -52,6 +52,8 @@ import {
     X,
     Zap,
 } from '@lucide/vue';
+import { computed } from 'vue';
+import type { FunctionalComponent } from 'vue';
 
 // Explicit registry keyed by the kebab-case ids used across the screens, so
 // Vite only bundles the icons we reference. Add new icons here as needed.
@@ -68,6 +70,7 @@ const registry: Record<string, FunctionalComponent> = {
     'chevron-down': ChevronDown,
     'chevron-right': ChevronRight,
     crown: Crown,
+    eye: Eye,
     'eye-off': EyeOff,
     fish: Fish,
     flame: Flame,
@@ -75,6 +78,7 @@ const registry: Record<string, FunctionalComponent> = {
     heart: Heart,
     image: Image,
     inbox: Inbox,
+    'key-round': KeyRound,
     'layout-grid': LayoutGrid,
     'locate-fixed': LocateFixed,
     lock: Lock,
@@ -117,13 +121,19 @@ const props = withDefaults(
     { size: 20, color: 'currentColor', strokeWidth: 2, fill: 'none' },
 );
 
-const component = computed<FunctionalComponent>(() => registry[props.name] ?? Circle);
+const component = computed<FunctionalComponent>(
+    () => registry[props.name] ?? Circle,
+);
 
 // Drive colour through `style` so CSS custom properties like var(--teal)
 // resolve — lucide sets stroke to currentColor, which inherits inline color.
 const style = computed(() => {
     const s: Record<string, string> = { color: props.color };
-    if (props.fill && props.fill !== 'none') s.fill = props.fill;
+
+    if (props.fill && props.fill !== 'none') {
+        s.fill = props.fill;
+    }
+
     return s;
 });
 </script>

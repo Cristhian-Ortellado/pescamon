@@ -48,6 +48,7 @@ const showPassword = ref(false);
 
                 <Form
                     v-bind="store.form()"
+                    novalidate
                     :reset-on-success="['password']"
                     v-slot="{ errors, processing }"
                 >

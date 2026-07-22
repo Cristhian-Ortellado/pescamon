@@ -22,6 +22,10 @@ createInertiaApp({
                 // Branded, unwrapped PescaDex screens that build their own
                 // full-page shell instead of the shared auth card.
                 return null;
+            case name == 'auth/Register':
+                // Again, unwrapped PescaDex screen, not using the shared
+                // auth card.
+                return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case legacySettings.includes(name):

@@ -66,23 +66,23 @@ function profileHref(e: Entry) {
     <template v-else>
         <!-- podium -->
         <div class="podium">
-            <div class="col">
+            <component :is="podium.second ? Link : 'div'" :href="podium.second ? profileHref(podium.second) : undefined" class="col" :class="{ tappable: podium.second }">
                 <div class="pavatar silver" />
                 <div class="pname">{{ podium.second?.name ?? '—' }}</div>
                 <div class="bar second">2</div>
-            </div>
-            <div class="col">
+            </component>
+            <component :is="podium.first ? Link : 'div'" :href="podium.first ? profileHref(podium.first) : undefined" class="col" :class="{ tappable: podium.first }">
                 <div class="pavatar gold">
                     <Icon name="crown" :size="20" color="var(--accent-pdx)" class="crown" />
                 </div>
                 <div class="pname">{{ podium.first?.name ?? '—' }}</div>
                 <div class="bar first">1</div>
-            </div>
-            <div class="col">
+            </component>
+            <component :is="podium.third ? Link : 'div'" :href="podium.third ? profileHref(podium.third) : undefined" class="col" :class="{ tappable: podium.third }">
                 <div class="pavatar bronze" />
                 <div class="pname">{{ podium.third?.name ?? '—' }}</div>
                 <div class="bar third">3</div>
-            </div>
+            </component>
         </div>
 
         <!-- list -->
@@ -163,6 +163,12 @@ function profileHref(e: Entry) {
 .col {
     text-align: center;
     flex: 1;
+}
+.tappable {
+    cursor: pointer;
+}
+.tappable:active {
+    opacity: 0.7;
 }
 .pavatar {
     width: 54px;

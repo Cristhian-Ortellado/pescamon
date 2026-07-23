@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import Icon from '@/components/pescadex/Icon.vue';
-import StatCard from '@/components/pescadex/StatCard.vue';
 import SpeciesCard from '@/components/pescadex/SpeciesCard.vue';
+import StatCard from '@/components/pescadex/StatCard.vue';
 import XpBar from '@/components/pescadex/XpBar.vue';
 
 interface ProfileUser {
@@ -43,7 +43,9 @@ const shown = computed(() => (tab.value === 'caught' ? props.pokedex.filter((s) 
 const featured = computed(() => props.pokedex.filter((s) => s.caught).slice(0, 6));
 
 function openSpecies(entry: PokedexEntry) {
-    if (entry.caught) router.visit(`/species/${entry.slug}`);
+    if (entry.caught) {
+router.visit(`/species/${entry.slug}`);
+}
 }
 function toggleFollow() {
     router.post(`/users/${props.profileUser.id}/follow`, {}, { preserveScroll: true });
@@ -131,6 +133,10 @@ function toggleFollow() {
                 />
             </div>
             <div class="bottom-spacer" />
+
+            <Link href="/catches/create" class="fab">
+                <Icon name="plus" :size="24" color="var(--accent-ink)" />
+            </Link>
         </template>
     </template>
 
@@ -473,5 +479,24 @@ function toggleFollow() {
     font-weight: 600;
     font-size: 17px;
     color: var(--text);
+}
+.fab {
+    display: none;
+}
+@media (max-width: 1023px) {
+    .fab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        bottom: calc(84px + env(safe-area-inset-bottom));
+        right: 20px;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--accent-pdx);
+        box-shadow: 0 8px 20px rgba(245, 165, 36, 0.45);
+        z-index: 30;
+    }
 }
 </style>

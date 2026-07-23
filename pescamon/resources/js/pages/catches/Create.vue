@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import RarityBadge from '@/components/pescadex/RarityBadge.vue';
 
@@ -52,13 +52,20 @@ const selectedSpecies = computed(() => props.species.find((s) => s.id === Number
 
 function onImageChange(e: Event) {
     const file = (e.target as HTMLInputElement).files?.[0];
-    if (!file) return;
+
+    if (!file) {
+return;
+}
+
     form.image = file;
     imagePreview.value = URL.createObjectURL(file);
 }
 
 function detectGps() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+return;
+}
+
     gpsState.value = 'detecting';
     navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -72,6 +79,14 @@ function detectGps() {
     );
 }
 
+function goBack() {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        router.visit('/dashboard');
+    }
+}
+
 function save() {
     form.post('/catches', { forceFormData: true });
 }
@@ -83,7 +98,7 @@ function save() {
     <div class="appbar-pad">
         <div class="top-gap" />
         <div class="appbar">
-            <button class="icon-btn" @click="router.visit('/dashboard')"><Icon name="x" :size="23" color="var(--icon-muted)" /></button>
+            <button class="icon-btn" @click="goBack()"><Icon name="x" :size="23" color="var(--icon-muted)" /></button>
             <span class="title">Nueva captura</span>
         </div>
     </div>

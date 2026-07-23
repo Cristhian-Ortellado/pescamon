@@ -315,6 +315,7 @@ function isActive(href: string) {
         border: 0;
         border-radius: 0;
         box-shadow: none;
+        padding-bottom: calc(72px + env(safe-area-inset-bottom));
     }
 }
 </style>

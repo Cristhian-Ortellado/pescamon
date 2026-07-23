@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import Icon from './Icon.vue';
 
 const page = usePage();

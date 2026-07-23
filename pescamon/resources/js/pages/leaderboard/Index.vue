@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import Icon from '@/components/pescadex/Icon.vue';
 
 interface Entry {
@@ -12,9 +12,20 @@ interface Entry {
     is_current_user: boolean;
 }
 
-const props = defineProps<{ ranking: Entry[]; me: Entry | null }>();
+const props = defineProps<{ ranking: Entry[]; me: Entry | null; scope: 'global' | 'friends' }>();
 
-const tabs = ['Global', 'Por especie', 'Amigos'];
+const tabs = [
+    { key: 'global', label: 'Global' },
+    { key: 'species', label: 'Por especie' },
+    { key: 'friends', label: 'Amigos' },
+] as const;
+
+function selectTab(key: (typeof tabs)[number]['key']) {
+    if (key === 'species' || key === props.scope) return;
+    router.get('/leaderboard', { scope: key }, { preserveScroll: true, preserveState: true, replace: true });
+}
+
+const showFriendsHint = computed(() => props.scope === 'friends' && props.ranking.length <= 1);
 
 const podium = computed(() => ({
     first: props.ranking.find((r) => r.rank === 1),
@@ -37,47 +48,60 @@ function profileHref(e: Entry) {
         <div class="top-gap" />
         <div class="screen-title">Rankings</div>
         <div class="tabs">
-            <span v-for="(t, i) in tabs" :key="t" class="tab" :class="{ active: i === 0 }">{{ t }}</span>
+            <span
+                v-for="t in tabs"
+                :key="t.key"
+                class="tab"
+                :class="{ active: t.key === scope, disabled: t.key === 'species' }"
+                @click="selectTab(t.key)"
+            >{{ t.label }}</span>
         </div>
     </div>
 
-    <!-- podium -->
-    <div class="podium">
-        <div class="col">
-            <div class="pavatar silver" />
-            <div class="pname">{{ podium.second?.name ?? '—' }}</div>
-            <div class="bar second">2</div>
-        </div>
-        <div class="col">
-            <div class="pavatar gold">
-                <Icon name="crown" :size="20" color="var(--accent-pdx)" class="crown" />
+    <div v-if="showFriendsHint" class="empty">
+        <Icon name="user-plus" :size="34" color="var(--text-locked)" />
+        <p>Todavía no sigues a otros pescadores.</p>
+    </div>
+
+    <template v-else>
+        <!-- podium -->
+        <div class="podium">
+            <div class="col">
+                <div class="pavatar silver" />
+                <div class="pname">{{ podium.second?.name ?? '—' }}</div>
+                <div class="bar second">2</div>
             </div>
-            <div class="pname">{{ podium.first?.name ?? '—' }}</div>
-            <div class="bar first">1</div>
+            <div class="col">
+                <div class="pavatar gold">
+                    <Icon name="crown" :size="20" color="var(--accent-pdx)" class="crown" />
+                </div>
+                <div class="pname">{{ podium.first?.name ?? '—' }}</div>
+                <div class="bar first">1</div>
+            </div>
+            <div class="col">
+                <div class="pavatar bronze" />
+                <div class="pname">{{ podium.third?.name ?? '—' }}</div>
+                <div class="bar third">3</div>
+            </div>
         </div>
-        <div class="col">
-            <div class="pavatar bronze" />
-            <div class="pname">{{ podium.third?.name ?? '—' }}</div>
-            <div class="bar third">3</div>
+
+        <!-- list -->
+        <div class="list">
+            <Link v-for="r in listRows" :key="r.id" :href="profileHref(r)" class="row tappable">
+                <span class="rank">{{ r.rank }}</span>
+                <div class="ravatar" />
+                <span class="rname">{{ r.name }}</span>
+                <span class="rscore">{{ r.species_count }} esp.</span>
+            </Link>
+
+            <Link v-if="me && meInList" href="/profile" class="row me">
+                <span class="rank me-rank">{{ me.rank }}</span>
+                <div class="ravatar me-avatar" />
+                <span class="rname strong">Tú · {{ me.name }}</span>
+                <span class="rscore me-score">{{ me.species_count }} esp.</span>
+            </Link>
         </div>
-    </div>
-
-    <!-- list -->
-    <div class="list">
-        <Link v-for="r in listRows" :key="r.id" :href="profileHref(r)" class="row tappable">
-            <span class="rank">{{ r.rank }}</span>
-            <div class="ravatar" />
-            <span class="rname">{{ r.name }}</span>
-            <span class="rscore">{{ r.species_count }} esp.</span>
-        </Link>
-
-        <Link v-if="me && meInList" href="/profile" class="row me">
-            <span class="rank me-rank">{{ me.rank }}</span>
-            <div class="ravatar me-avatar" />
-            <span class="rname strong">Tú · {{ me.name }}</span>
-            <span class="rscore me-score">{{ me.species_count }} esp.</span>
-        </Link>
-    </div>
+    </template>
 
     <div class="bottom-spacer" />
 </template>
@@ -109,11 +133,25 @@ function profileHref(e: Entry) {
     color: var(--icon-muted);
     font-size: 12.5px;
     font-weight: 600;
+    cursor: pointer;
 }
 .tab.active {
     background: rgba(45, 212, 191, 0.18);
     border-color: rgba(45, 212, 191, 0.5);
     color: var(--teal-chip-text);
+}
+.tab.disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 60px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
 }
 .podium {
     display: flex;

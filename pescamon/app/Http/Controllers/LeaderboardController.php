@@ -12,11 +12,20 @@ class LeaderboardController extends Controller
     public function index(Request $request): Response
     {
         $me = $request->user();
+        $scope = $request->query('scope') === 'friends' ? 'friends' : 'global';
 
         // Rank users by distinct verified species (Pokédex completion).
-        $ranked = User::withCount(['catches as species_count' => function ($q) {
+        $query = User::withCount(['catches as species_count' => function ($q) {
             $q->where('status', 'verified')->selectRaw('COUNT(DISTINCT species_id)');
-        }])
+        }]);
+
+        if ($scope === 'friends') {
+            // Only the people the current user follows, plus themself.
+            $friendIds = $me->following()->pluck('users.id')->push($me->id);
+            $query->whereIn('id', $friendIds);
+        }
+
+        $ranked = $query
             ->orderByDesc('species_count')
             ->orderByDesc('xp')
             ->get(['id', 'name', 'level', 'xp']);
@@ -35,6 +44,7 @@ class LeaderboardController extends Controller
         return Inertia::render('leaderboard/Index', [
             'ranking' => $ranking->take(20)->values(),
             'me' => $meEntry,
+            'scope' => $scope,
         ]);
     }
 }

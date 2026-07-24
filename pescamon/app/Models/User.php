@@ -6,9 +6,11 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 // FishCatch is the model for the catches table (Catch is a reserved PHP keyword)
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -21,6 +23,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property string|null $avatar_path
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property int $level
@@ -34,12 +37,20 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'level', 'xp', 'location_privacy', 'unit_preference'])]
+#[Fillable(['name', 'email', 'avatar_path', 'password', 'level', 'xp', 'location_privacy', 'unit_preference'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /**
+     * Accessors appended to the model's array/JSON form so the frontend
+     * always receives a ready-to-use avatar URL.
+     *
+     * @var list<string>
+     */
+    protected $appends = ['avatar'];
 
     protected function casts(): array
     {
@@ -50,6 +61,18 @@ class User extends Authenticatable implements PasskeyUser
             'level' => 'integer',
             'xp' => 'integer',
         ];
+    }
+
+    /**
+     * Public URL of the user's profile picture, or null when none is set.
+     */
+    protected function avatar(): Attribute
+    {
+        return Attribute::get(
+            fn (): ?string => $this->avatar_path
+                ? Storage::disk('public')->url($this->avatar_path)
+                : null,
+        );
     }
 
     public function catches(): HasMany

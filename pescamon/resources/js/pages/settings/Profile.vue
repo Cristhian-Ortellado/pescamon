@@ -11,13 +11,63 @@ defineProps<{
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 
-const form = useForm({
+const form = useForm<{
+    name: string;
+    email: string;
+    avatar: File | null;
+    remove_avatar: boolean;
+}>({
     name: user.value.name,
     email: user.value.email,
+    avatar: null,
+    remove_avatar: false,
 });
 
+const avatarInput = useTemplateRef<HTMLInputElement>('avatarInput');
+const avatarPreview = ref<string | null>(null);
+
+// Current avatar to display: local preview > stored avatar > striped placeholder.
+const currentAvatar = computed(() => {
+    if (avatarPreview.value) return avatarPreview.value;
+    if (form.remove_avatar) return null;
+    return (user.value.avatar as string | undefined) ?? null;
+});
+
+function pickAvatar() {
+    avatarInput.value?.click();
+}
+
+function onAvatarChange(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0] ?? null;
+    if (!file) return;
+    form.avatar = file;
+    form.remove_avatar = false;
+    if (avatarPreview.value) URL.revokeObjectURL(avatarPreview.value);
+    avatarPreview.value = URL.createObjectURL(file);
+}
+
+function removeAvatar() {
+    form.avatar = null;
+    form.remove_avatar = true;
+    if (avatarPreview.value) {
+        URL.revokeObjectURL(avatarPreview.value);
+        avatarPreview.value = null;
+    }
+    if (avatarInput.value) avatarInput.value.value = '';
+}
+
 function save() {
-    form.patch('/settings/profile', { preserveScroll: true });
+    form.patch('/settings/profile', {
+        preserveScroll: true,
+        onSuccess: () => {
+            form.avatar = null;
+            form.remove_avatar = false;
+            if (avatarPreview.value) {
+                URL.revokeObjectURL(avatarPreview.value);
+                avatarPreview.value = null;
+            }
+        },
+    });
 }
 
 function resendVerification() {
@@ -60,6 +110,62 @@ function confirmDelete() {
             </button>
             <span class="title">Editar perfil</span>
         </div>
+    </div>
+
+    <div class="group-label plain">Foto de perfil</div>
+    <div class="card">
+        <div class="avatar-body">
+            <button
+                type="button"
+                class="avatar-ring"
+                :class="{ 'has-image': currentAvatar }"
+                @click="pickAvatar"
+            >
+                <img
+                    v-if="currentAvatar"
+                    :src="currentAvatar"
+                    :alt="form.name"
+                    class="avatar-img"
+                />
+                <Icon
+                    v-else
+                    name="user"
+                    :size="34"
+                    color="var(--text-faint)"
+                />
+                <span class="avatar-edit">
+                    <Icon name="camera" :size="15" color="var(--accent-ink)" />
+                </span>
+            </button>
+
+            <div class="avatar-actions">
+                <button type="button" class="avatar-btn" @click="pickAvatar">
+                    <Icon name="upload" :size="16" color="var(--teal)" />
+                    Subir foto
+                </button>
+                <button
+                    v-if="currentAvatar"
+                    type="button"
+                    class="avatar-btn danger"
+                    @click="removeAvatar"
+                >
+                    <Icon name="trash-2" :size="16" color="#e2737a" />
+                    Quitar
+                </button>
+                <p class="avatar-hint">JPG, PNG o WebP · máx. 4 MB</p>
+            </div>
+
+            <input
+                ref="avatarInput"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                class="hidden-input"
+                @change="onAvatarChange"
+            />
+        </div>
+        <p v-if="form.errors.avatar" class="err avatar-err">
+            {{ form.errors.avatar }}
+        </p>
     </div>
 
     <div class="group-label plain">Datos personales</div>
@@ -240,6 +346,91 @@ function confirmDelete() {
 }
 .card-body {
     padding: 16px 15px 18px;
+}
+.avatar-body {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 18px 16px;
+}
+.avatar-ring {
+    position: relative;
+    width: 78px;
+    height: 78px;
+    flex: none;
+    border-radius: 50%;
+    border: 2.5px solid var(--teal);
+    background: repeating-linear-gradient(
+        135deg,
+        var(--avatar-a),
+        var(--avatar-a) 6px,
+        var(--avatar-b) 6px,
+        var(--avatar-b) 12px
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+}
+.avatar-ring.has-image {
+    background: none;
+}
+.avatar-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+.avatar-edit {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent-pdx);
+    border: 2px solid var(--surface-alt);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.avatar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+}
+.avatar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--surface);
+    border: 1px solid var(--field-border);
+    color: var(--text-soft);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 11px;
+    cursor: pointer;
+}
+.avatar-btn.danger {
+    color: #e2737a;
+    border-color: #a34751;
+}
+.avatar-hint {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 2px;
+}
+.hidden-input {
+    display: none;
+}
+.avatar-err {
+    padding: 0 16px 14px;
 }
 .field {
     margin-top: 16px;

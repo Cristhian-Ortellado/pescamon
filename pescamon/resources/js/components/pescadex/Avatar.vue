@@ -1,22 +1,26 @@
 <script setup lang="ts">
-// Striped placeholder avatar used across the app. Optional level chip and
-// teal/accent ring variants mirror the official design.
+// Circular user avatar. Shows the uploaded profile picture when `src` is
+// provided, otherwise falls back to the striped placeholder. Optional level
+// chip and teal/accent ring variants mirror the official design.
 withDefaults(
     defineProps<{
         size?: number;
         level?: number | null;
         ring?: 'teal' | 'accent' | 'none';
+        src?: string | null;
+        alt?: string;
     }>(),
-    { size: 38, level: null, ring: 'none' },
+    { size: 38, level: null, ring: 'none', src: null, alt: '' },
 );
 </script>
 
 <template>
     <div
         class="avatar"
-        :class="['ring-' + ring]"
+        :class="['ring-' + ring, { 'has-image': src }]"
         :style="{ width: size + 'px', height: size + 'px' }"
     >
+        <img v-if="src" :src="src" :alt="alt" class="avatar-img" />
         <span v-if="level != null" class="level-tag">Nv {{ level }}</span>
     </div>
 </template>
@@ -33,6 +37,17 @@ withDefaults(
         var(--avatar-b) 5px,
         var(--avatar-b) 10px
     );
+}
+.avatar.has-image {
+    background: none;
+}
+.avatar-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 .ring-teal {
     border: 2px solid var(--teal);

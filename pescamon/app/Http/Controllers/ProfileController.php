@@ -72,6 +72,7 @@ class ProfileController extends Controller
         return Inertia::render('profile/Show', [
             'profileUser' => [
                 ...$profileUser->only(['id', 'name', 'level', 'xp', 'catches_count', 'followers_count', 'following_count']),
+                'avatar' => $profileUser->avatar,
                 'is_own_profile' => $profileUser->id === $authUser->id,
                 'is_following' => $isFollowing,
             ],

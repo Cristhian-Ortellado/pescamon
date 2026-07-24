@@ -30,7 +30,7 @@ class LeaderboardController extends Controller
             ->where('status', 'verified')
             ->groupBy('user_id', 'species_id')
             ->orderByDesc('total_xp')
-            ->with(['user:id,name', 'species:id,name'])
+            ->with(['user:id,name,avatar_path', 'species:id,name'])
             ->get();
         $rankedSpeciesFinal = $rankedBySpecies
             ->groupBy('species_id')
@@ -38,6 +38,7 @@ class LeaderboardController extends Controller
                 'rank' => $i + 1,
                 'id' => $row->user_id,
                 'name' => $row->user->name,
+                'avatar' => $row->user->avatar,
                 'species_id' => $row->species_id,
                 'species_name' => $row->species->name,
                 'total_xp' => (int) $row->total_xp,
@@ -54,12 +55,13 @@ class LeaderboardController extends Controller
         $ranked = $query
             ->orderByDesc('species_count')
             ->orderByDesc('xp')
-            ->get(['id', 'name', 'level', 'xp']);
+            ->get(['id', 'name', 'level', 'xp', 'avatar_path']);
 
         $ranking = $ranked->values()->map(fn (User $u, int $i) => [
             'rank' => $i + 1,
             'id' => $u->id,
             'name' => $u->name,
+            'avatar' => $u->avatar,
             'level' => $u->level,
             'species_count' => (int) $u->species_count,
             'is_current_user' => $u->id === $me->id,

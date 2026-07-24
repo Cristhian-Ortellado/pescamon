@@ -18,7 +18,7 @@ class FeedController extends Controller
         $followingIds = $user->following()->pluck('users.id')->push($user->id);
 
         $query = FishCatch::query()
-            ->with(['user:id,name,level', 'species:id,name,slug,rarity'])
+            ->with(['user:id,name,level,avatar_path', 'species:id,name,slug,rarity'])
             ->withCount(['likes', 'comments'])
             ->where('status', 'verified')
             ->latest('caught_at')
@@ -36,6 +36,7 @@ class FeedController extends Controller
                 'id' => $c->user->id,
                 'name' => $c->user->name,
                 'level' => $c->user->level,
+                'avatar' => $c->user->avatar,
             ],
             'species' => $c->species->only(['id', 'name', 'slug', 'rarity']),
             'weight_kg' => (float) $c->weight_kg,

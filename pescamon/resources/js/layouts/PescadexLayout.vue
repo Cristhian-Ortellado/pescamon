@@ -12,6 +12,7 @@ interface AuthUser {
     name: string;
     email: string;
     level: number;
+    avatar: string | null;
 }
 
 const page = usePage();
@@ -90,7 +91,8 @@ function isActive(href: string) {
             </button>
 
             <Link href="/profile" class="user-chip">
-                <div class="chip-avatar">
+                <div class="chip-avatar" :class="{ 'has-image': user?.avatar }">
+                    <img v-if="user?.avatar" :src="user.avatar" :alt="user?.name" class="chip-avatar-img" />
                     <span class="chip-level">{{ user?.level ?? 1 }}</span>
                 </div>
                 <div class="chip-text">
@@ -250,6 +252,17 @@ function isActive(href: string) {
     );
     border: 2px solid var(--teal);
     flex: none;
+}
+.chip-avatar.has-image {
+    background: none;
+}
+.chip-avatar-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 .chip-level {
     position: absolute;

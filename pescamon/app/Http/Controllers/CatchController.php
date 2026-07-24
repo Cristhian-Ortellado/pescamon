@@ -37,18 +37,18 @@ class CatchController extends Controller
 
         $catch = FishCatch::create([
             'user_id' => $user->id,
-            'species_id' => $request->species_id,
-            'weight_kg' => $request->weight_kg,
-            'length_cm' => $request->length_cm,
+            'species_id' => $request->input('species_id'),
+            'weight_kg' => $request->input('weight_kg'),
+            'length_cm' => $request->input('length_cm'),
             'image_path' => $imagePath,
-            'caught_at' => $request->caught_at,
-            'method' => $request->method,
-            'bait_used' => $request->bait_used,
-            'water_body_type' => $request->water_body_type,
-            'location_name' => $request->location_name,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'notes' => $request->notes,
+            'caught_at' => $request->input('caught_at'),
+            'method' => $request->input('method'),
+            'bait_used' => $request->input('bait_used'),
+            'water_body_type' => $request->input('water_body_type'),
+            'location_name' => $request->input('location_name'),
+            'latitude' => $request->input('latitude'),
+            'longitude' => $request->input('longitude'),
+            'notes' => $request->input('notes'),
             'status' => 'pending',
         ]);
 
@@ -62,7 +62,7 @@ class CatchController extends Controller
 
     public function show(Request $request, FishCatch $catch): Response
     {
-        $catch->load(['species', 'user:id,name,level', 'comments.user:id,name', 'likes']);
+        $catch->load(['species', 'user:id,name,level,avatar_path', 'comments.user:id,name,avatar_path', 'likes']);
 
         $isLiked = $request->user()->likes()->where('catch_id', $catch->id)->exists();
 

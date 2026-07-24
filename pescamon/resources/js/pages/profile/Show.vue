@@ -9,6 +9,7 @@ import XpBar from '@/components/pescadex/XpBar.vue';
 interface ProfileUser {
     id: number;
     name: string;
+    avatar: string | null;
     level: number;
     xp: number;
     catches_count: number;
@@ -61,7 +62,10 @@ function toggleFollow() {
             <div class="top-gap" />
             <div class="head-row">
                 <div class="who">
-                    <div class="avatar"><span class="level-tag">Nv {{ profileUser.level }}</span></div>
+                    <div class="avatar" :class="{ 'has-image': profileUser.avatar }">
+                        <img v-if="profileUser.avatar" :src="profileUser.avatar" :alt="profileUser.name" class="avatar-img" />
+                        <span class="level-tag">Nv {{ profileUser.level }}</span>
+                    </div>
                     <div>
                         <div class="display-name">{{ profileUser.name }}</div>
                         <div class="handle">{{ handle }}</div>
@@ -149,7 +153,10 @@ function toggleFollow() {
                 <Icon name="more-horizontal" :size="22" color="var(--icon-muted)" />
             </div>
             <div class="pub-who">
-                <div class="pub-avatar"><span class="level-tag center">Nv {{ profileUser.level }}</span></div>
+                <div class="pub-avatar" :class="{ 'has-image': profileUser.avatar }">
+                    <img v-if="profileUser.avatar" :src="profileUser.avatar" :alt="profileUser.name" class="avatar-img" />
+                    <span class="level-tag center">Nv {{ profileUser.level }}</span>
+                </div>
                 <div class="pub-name">{{ profileUser.name }}</div>
                 <div class="handle">{{ handle }}</div>
                 <div class="actions">
@@ -215,6 +222,17 @@ function toggleFollow() {
     background: repeating-linear-gradient(135deg, var(--avatar-a), var(--avatar-a) 6px, var(--avatar-b) 6px, var(--avatar-b) 12px);
     border: 2.5px solid var(--teal);
     flex: none;
+}
+.avatar.has-image {
+    background: none;
+}
+.avatar-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 .level-tag {
     position: absolute;
@@ -437,6 +455,9 @@ function toggleFollow() {
     border-radius: 50%;
     background: repeating-linear-gradient(135deg, var(--avatar-a), var(--avatar-a) 6px, var(--avatar-b) 6px, var(--avatar-b) 12px);
     border: 3px solid var(--accent-pdx);
+}
+.pub-avatar.has-image {
+    background: none;
 }
 .pub-name {
     font-family: var(--font-display);

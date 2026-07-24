@@ -7,6 +7,7 @@ interface Entry {
     rank: number;
     id: number;
     name: string;
+    avatar: string | null;
     level: number;
     species_count: number;
     is_current_user: boolean;
@@ -25,6 +26,7 @@ interface RankedSpecies {
     rank: number,
     id: number,
     name: string,
+    avatar: string | null,
     species_id: number,
     species_name: string,
     total_xp: number,
@@ -99,19 +101,24 @@ function profileHref(e: {id: number, is_current_user: boolean}) {
         <!-- podium -->
         <div class="podium">
             <component :is="podiumBySpecies.second ? Link : 'div'" :href="podiumBySpecies.second ? profileHref(podiumBySpecies.second) : undefined" class="col" :class="{ tappable: podiumBySpecies.second }">
-                <div class="pavatar silver" />
+                <div class="pavatar silver" :class="{ 'has-image': podiumBySpecies.second?.avatar }">
+                    <img v-if="podiumBySpecies.second?.avatar" :src="podiumBySpecies.second.avatar" :alt="podiumBySpecies.second.name" class="pav-img" />
+                </div>
                 <div class="pname">{{ podiumBySpecies.second?.name ?? '—' }}</div>
                 <div class="bar second">2</div>
             </component>
             <component :is="podiumBySpecies.first ? Link : 'div'" :href="podiumBySpecies.first ? profileHref(podiumBySpecies.first) : undefined" class="col" :class="{ tappable: podiumBySpecies.first }">
-                <div class="pavatar gold">
+                <div class="pavatar gold" :class="{ 'has-image': podiumBySpecies.first?.avatar }">
+                    <img v-if="podiumBySpecies.first?.avatar" :src="podiumBySpecies.first.avatar" :alt="podiumBySpecies.first.name" class="pav-img" />
                     <Icon name="crown" :size="20" color="var(--accent-pdx)" class="crown" />
                 </div>
                 <div class="pname">{{ podiumBySpecies.first?.name ?? '—' }}</div>
                 <div class="bar first">1</div>
             </component>
             <component :is="podiumBySpecies.third ? Link : 'div'" :href="podiumBySpecies.third ? profileHref(podiumBySpecies.third) : undefined" class="col" :class="{ tappable: podiumBySpecies.third }">
-                <div class="pavatar bronze" />
+                <div class="pavatar bronze" :class="{ 'has-image': podiumBySpecies.third?.avatar }">
+                    <img v-if="podiumBySpecies.third?.avatar" :src="podiumBySpecies.third.avatar" :alt="podiumBySpecies.third.name" class="pav-img" />
+                </div>
                 <div class="pname">{{ podiumBySpecies.third?.name ?? '—' }}</div>
                 <div class="bar third">3</div>
             </component>
@@ -132,14 +139,18 @@ function profileHref(e: {id: number, is_current_user: boolean}) {
         <div class="list">
             <Link v-for="r in listRowsBySpecies" :key="r.id" :href="profileHref(r)" class="row tappable">
                 <span class="rank">{{ r.rank }}</span>
-                <div class="ravatar" />
+                <div class="ravatar" :class="{ 'has-image': r.avatar }">
+                    <img v-if="r.avatar" :src="r.avatar" :alt="r.name" class="rav-img" />
+                </div>
                 <span class="rname">{{ r.name }}</span>
                 <span class="rscore">{{ r.total_xp }} esp.</span>
             </Link>
 
             <Link v-if="meInListBySpecies" href="/profile" class="row me">
                 <span class="rank me-rank">{{ meBySpecies?.rank }}</span>
-                <div class="ravatar me-avatar" />
+                <div class="ravatar me-avatar" :class="{ 'has-image': meBySpecies?.avatar }">
+                    <img v-if="meBySpecies?.avatar" :src="meBySpecies.avatar" :alt="meBySpecies.name" class="rav-img" />
+                </div>
                 <span class="rname strong">Tú · {{ meBySpecies?.name }}</span>
                 <span class="rscore me-score">{{ meBySpecies?.total_xp }} esp.</span>
             </Link>
@@ -152,19 +163,24 @@ function profileHref(e: {id: number, is_current_user: boolean}) {
         <!-- podium -->
         <div class="podium">
             <component :is="podium.second ? Link : 'div'" :href="podium.second ? profileHref(podium.second) : undefined" class="col" :class="{ tappable: podium.second }">
-                <div class="pavatar silver" />
+                <div class="pavatar silver" :class="{ 'has-image': podium.second?.avatar }">
+                    <img v-if="podium.second?.avatar" :src="podium.second.avatar" :alt="podium.second.name" class="pav-img" />
+                </div>
                 <div class="pname">{{ podium.second?.name ?? '—' }}</div>
                 <div class="bar second">2</div>
             </component>
             <component :is="podium.first ? Link : 'div'" :href="podium.first ? profileHref(podium.first) : undefined" class="col" :class="{ tappable: podium.first }">
-                <div class="pavatar gold">
+                <div class="pavatar gold" :class="{ 'has-image': podium.first?.avatar }">
+                    <img v-if="podium.first?.avatar" :src="podium.first.avatar" :alt="podium.first.name" class="pav-img" />
                     <Icon name="crown" :size="20" color="var(--accent-pdx)" class="crown" />
                 </div>
                 <div class="pname">{{ podium.first?.name ?? '—' }}</div>
                 <div class="bar first">1</div>
             </component>
             <component :is="podium.third ? Link : 'div'" :href="podium.third ? profileHref(podium.third) : undefined" class="col" :class="{ tappable: podium.third }">
-                <div class="pavatar bronze" />
+                <div class="pavatar bronze" :class="{ 'has-image': podium.third?.avatar }">
+                    <img v-if="podium.third?.avatar" :src="podium.third.avatar" :alt="podium.third.name" class="pav-img" />
+                </div>
                 <div class="pname">{{ podium.third?.name ?? '—' }}</div>
                 <div class="bar third">3</div>
             </component>
@@ -174,14 +190,18 @@ function profileHref(e: {id: number, is_current_user: boolean}) {
         <div class="list">
             <Link v-for="r in listRows" :key="r.id" :href="profileHref(r)" class="row tappable">
                 <span class="rank">{{ r.rank }}</span>
-                <div class="ravatar" />
+                <div class="ravatar" :class="{ 'has-image': r.avatar }">
+                    <img v-if="r.avatar" :src="r.avatar" :alt="r.name" class="rav-img" />
+                </div>
                 <span class="rname">{{ r.name }}</span>
                 <span class="rscore">{{ r.species_count }} esp.</span>
             </Link>
 
             <Link v-if="me && meInList" href="/profile" class="row me">
                 <span class="rank me-rank">{{ me.rank }}</span>
-                <div class="ravatar me-avatar" />
+                <div class="ravatar me-avatar" :class="{ 'has-image': me.avatar }">
+                    <img v-if="me.avatar" :src="me.avatar" :alt="me.name" class="rav-img" />
+                </div>
                 <span class="rname strong">Tú · {{ me.name }}</span>
                 <span class="rscore me-score">{{ me.species_count }} esp.</span>
             </Link>
@@ -256,11 +276,23 @@ function profileHref(e: {id: number, is_current_user: boolean}) {
     opacity: 0.7;
 }
 .pavatar {
+    position: relative;
     width: 54px;
     height: 54px;
     border-radius: 50%;
     margin: 0 auto 7px;
     background: repeating-linear-gradient(135deg, var(--avatar-a), var(--avatar-a) 5px, var(--avatar-b) 5px, var(--avatar-b) 10px);
+}
+.pavatar.has-image {
+    background: none;
+}
+.pav-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 .pavatar.silver {
     border: 2px solid #cbd5e1;
@@ -333,11 +365,23 @@ function profileHref(e: {id: number, is_current_user: boolean}) {
     color: var(--text-muted);
 }
 .ravatar {
+    position: relative;
     width: 36px;
     height: 36px;
     border-radius: 50%;
     background: repeating-linear-gradient(135deg, var(--avatar-a), var(--avatar-a) 5px, var(--avatar-b) 5px, var(--avatar-b) 10px);
     flex: none;
+}
+.ravatar.has-image {
+    background: none;
+}
+.rav-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 .rname {
     flex: 1;

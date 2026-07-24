@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import Icon from '@/components/pescadex/Icon.vue';
 import RarityBadge from '@/components/pescadex/RarityBadge.vue';
@@ -10,13 +10,13 @@ import { formatDateEs, methodLabel, waterLabel } from '@/lib/pescadex';
 interface Comment {
     id: number;
     body: string;
-    user: { id: number; name: string };
+    user: { id: number; name: string; avatar: string | null };
     created_at: string;
 }
 interface CatchData {
     id: number;
     species: { id: number; name: string; slug: string; rarity: string };
-    user: { id: number; name: string; level: number };
+    user: { id: number; name: string; level: number; avatar: string | null };
     weight_kg: string;
     length_cm: string | null;
     image_path: string;
@@ -34,15 +34,15 @@ interface CatchData {
 }
 
 const props = defineProps<{ catch: CatchData }>();
-const item = props.catch;
+const item = computed(() => props.catch);
 
-const isLiked = ref(item.is_liked);
-const likesCount = ref(item.likes_count);
+const isLiked = ref(item.value.is_liked);
+const likesCount = ref(item.value.likes_count);
 
 const commentForm = useForm({ body: '' });
 
 function toggleLike() {
-    router.post(`/catches/${item.id}/like`, {}, {
+    router.post(`/catches/${item.value.id}/like`, {}, {
         preserveScroll: true,
         onSuccess: () => {
             isLiked.value = !isLiked.value;
@@ -51,7 +51,7 @@ function toggleLike() {
     });
 }
 function submitComment() {
-    commentForm.post(`/catches/${item.id}/comments`, {
+    commentForm.post(`/catches/${item.value.id}/comments`, {
         preserveScroll: true,
         onSuccess: () => commentForm.reset(),
     });
@@ -79,7 +79,7 @@ function submitComment() {
 
         <div class="content">
             <Link :href="`/profile/${item.user.id}`" class="author">
-                <Avatar :size="40" ring="teal" />
+                <Avatar :size="40" ring="teal" :src="item.user.avatar" :alt="item.user.name" />
                 <div>
                     <div class="name">{{ item.user.name }}</div>
                     <div class="when">{{ formatDateEs(item.caught_at, true) }}</div>
@@ -115,10 +115,18 @@ function submitComment() {
 
             <!-- comments -->
             <div class="comments">
-                <div v-for="c in item.comments" :key="c.id" class="comment">
-                    <div class="c-name">{{ c.user.name }}</div>
-                    <div class="c-body">{{ c.body }}</div>
-                </div>
+                <Link
+                    v-for="c in item.comments"
+                    :key="c.id"
+                    :href="`/profile/${c.user.id}`"
+                    class="comment"
+                >
+                    <Avatar :size="34" :src="c.user.avatar" :alt="c.user.name" />
+                    <div class="c-content">
+                        <div class="c-name">{{ c.user.name }}</div>
+                        <div class="c-body">{{ c.body }}</div>
+                    </div>
+                </Link>
                 <p v-if="item.comments.length === 0" class="no-comments">Sé el primero en comentar.</p>
             </div>
         </div>
@@ -316,9 +324,16 @@ function submitComment() {
     gap: 12px;
 }
 .comment {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
     background: var(--surface-alt);
     border-radius: 12px;
     padding: 10px 12px;
+}
+.c-content {
+    flex: 1;
+    min-width: 0;
 }
 .c-name {
     font-size: 12px;

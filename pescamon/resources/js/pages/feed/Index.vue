@@ -8,7 +8,7 @@ import { timeAgo } from '@/lib/pescadex';
 
 interface Post {
     id: number;
-    author: { id: number; name: string; level: number };
+    author: { id: number; name: string; level: number; avatar: string | null };
     species: { id: number; name: string; slug: string; rarity: string };
     weight_kg: number;
     location_name: string | null;
@@ -70,7 +70,7 @@ function follow(id: number) {
                 class="author-tap"
                 @click.stop
             >
-                <Avatar :size="38" />
+                <Avatar :size="38" :src="post.author.avatar" :alt="post.author.name" />
                 <div class="author">
                     <div class="name">{{ post.author.name }}</div>
                     <div class="meta">

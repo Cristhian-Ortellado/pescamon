@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FishCatch;
 use App\Models\Species;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -12,7 +13,16 @@ class SpeciesController extends Controller
 {
     public function show(Request $request, Species $species): Response
     {
-        $user = $request->user();
+        $authUser = $request->user();
+
+        // When arriving from another angler's profile (?user=ID), the species
+        // history/personal-best shown must belong to THAT user, not the viewer.
+        $profileUserId = $request->integer('user');
+        $user = $profileUserId && $profileUserId !== $authUser->id
+            ? User::find($profileUserId) ?? $authUser
+            : $authUser;
+
+        $isSelf = $user->id === $authUser->id;
 
         $userCaught = $user->catches()
             ->where('species_id', $species->id)
@@ -60,6 +70,11 @@ class SpeciesController extends Controller
 
         return Inertia::render('species/Show', [
             'species' => $species,
+            'profileUser' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'is_self' => $isSelf,
+            ],
             'userCaught' => $userCaught,
             'personalBest' => $personalBest,
             'userCatches' => $userCatches,

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { goBack } from '@/lib/navigation';
 import Icon from '@/components/pescadex/Icon.vue';
 import SpeciesCard from '@/components/pescadex/SpeciesCard.vue';
 import StatCard from '@/components/pescadex/StatCard.vue';
 import XpBar from '@/components/pescadex/XpBar.vue';
+import { goBack } from '@/lib/navigation';
 
 interface ProfileUser {
     id: number;
@@ -45,9 +45,16 @@ const shown = computed(() => (tab.value === 'caught' ? props.pokedex.filter((s) 
 const caughtSpecies = computed(() => props.pokedex.filter((s) => s.caught));
 
 function openSpecies(entry: PokedexEntry) {
-    if (entry.caught) {
-router.visit(`/species/${entry.slug}`);
-}
+    if (!entry.caught) {
+        return;
+    }
+
+    // On another angler's profile, carry their id so the species page shows
+    // THAT user's history instead of the viewer's.
+    const url = props.profileUser.is_own_profile
+        ? `/species/${entry.slug}`
+        : `/species/${entry.slug}?user=${props.profileUser.id}`;
+    router.visit(url);
 }
 function toggleFollow() {
     router.post(`/users/${props.profileUser.id}/follow`, {}, { preserveScroll: true });

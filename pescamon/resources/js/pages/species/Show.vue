@@ -27,6 +27,7 @@ const props = defineProps<{
         habitat_description: string | null;
         average_weight_kg: string | null;
     };
+    profileUser: { id: number; name: string; is_self: boolean };
     userCaught: boolean;
     personalBest: UserCatch | null;
     userCatches: UserCatch[];
@@ -34,6 +35,10 @@ const props = defineProps<{
 }>();
 
 const heroImage = props.personalBest?.image_path ?? null;
+
+const backFallback = props.profileUser.is_self
+    ? '/profile'
+    : `/profile/${props.profileUser.id}`;
 </script>
 
 <template>
@@ -43,7 +48,7 @@ const heroImage = props.personalBest?.image_path ?? null;
         <CatchPhoto :path="heroImage" :rarity="species.rarity" :stripe="11" :alt="species.name" />
         <div class="hero-fade" />
         <div class="hero-actions">
-            <button class="round" @click="goBack('/profile')"><Icon name="arrow-left" :size="20" /></button>
+            <button class="round" @click="goBack(backFallback)"><Icon name="arrow-left" :size="20" /></button>
         </div>
         <RarityBadge :rarity="species.rarity" class="hero-badge" />
     </div>
@@ -74,11 +79,12 @@ const heroImage = props.personalBest?.image_path ?? null;
 
         <div v-if="!userCaught" class="locked-note">
             <Icon name="lock" :size="16" color="var(--text-faint)" />
-            Aún no has capturado esta especie. ¡Sal a pescar!
+            <template v-if="profileUser.is_self">Aún no has capturado esta especie. ¡Sal a pescar!</template>
+            <template v-else>{{ profileUser.name }} aún no ha capturado esta especie.</template>
         </div>
 
         <template v-if="userCatches.length">
-            <div class="section-title hist-title">Tu historial</div>
+            <div class="section-title hist-title">{{ profileUser.is_self ? 'Tu historial' : `Historial de ${profileUser.name}` }}</div>
             <Link
                 v-for="c in userCatches"
                 :key="c.id"

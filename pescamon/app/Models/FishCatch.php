@@ -29,6 +29,7 @@ class FishCatch extends Model
         'water_body_type',
         'exif_raw',
         'is_personal_best',
+        'xp_earned',
         'status',
         'notes',
     ];
@@ -43,6 +44,7 @@ class FishCatch extends Model
             'caught_at' => 'datetime',
             'exif_raw' => 'array',
             'is_personal_best' => 'boolean',
+            'xp_earned' => 'integer',
         ];
     }
 

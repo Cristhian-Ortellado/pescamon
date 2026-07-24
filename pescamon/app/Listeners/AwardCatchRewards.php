@@ -38,7 +38,10 @@ class AwardCatchRewards
         // Calculate XP and personal best flag
         $reward = $this->levelingService->calculateCatchReward($user, $catch);
 
-        $catch->update(['is_personal_best' => $reward['is_personal_best']]);
+        $catch->update([
+            'is_personal_best' => $reward['is_personal_best'],
+            'xp_earned' => $reward['xp'],
+        ]);
 
         // Track level before any XP so we can detect a level-up across both the
         // catch reward AND any achievement rewards awarded below.

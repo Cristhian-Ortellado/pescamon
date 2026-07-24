@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import Icon from '@/components/pescadex/Icon.vue';
 
@@ -12,7 +12,26 @@ interface Entry {
     is_current_user: boolean;
 }
 
-const props = defineProps<{ ranking: Entry[]; me: Entry | null; scope: 'global' | 'friends' }>();
+interface Species {
+    id: number;
+    name: string;
+    scientific_name: string;
+    slug: string;
+    rarity: string;
+    average_weight_kg: number | null;
+}
+
+interface RankedSpecies {
+    rank: number,
+    id: number,
+    name: string,
+    species_id: number,
+    species_name: string,
+    total_xp: number,
+    is_current_user: boolean,
+}
+
+const props = defineProps<{ ranking: Entry[]; species: Species[], rankedSpecies: RankedSpecies[], me: Entry | null; scope: 'global' | 'friends' | 'species' }>();
 
 const tabs = [
     { key: 'global', label: 'Global' },
@@ -21,11 +40,13 @@ const tabs = [
 ] as const;
 
 function selectTab(key: (typeof tabs)[number]['key']) {
-    if (key === 'species' || key === props.scope) return;
+    if (key === props.scope) return;
     router.get('/leaderboard', { scope: key }, { preserveScroll: true, preserveState: true, replace: true });
 }
 
 const showFriendsHint = computed(() => props.scope === 'friends' && props.ranking.length <= 1);
+const showSearchBySpeciesBar = computed(() => props.scope === 'species');
+const specie_id = ref(props.species[0]?.id ?? null);
 
 const podium = computed(() => ({
     first: props.ranking.find((r) => r.rank === 1),
@@ -33,12 +54,23 @@ const podium = computed(() => ({
     third: props.ranking.find((r) => r.rank === 3),
 }));
 
+const podiumBySpecies = computed(() => ({
+    first: props.rankedSpecies.find((r) => r.rank === 1 && r.species_id === specie_id.value),
+    second: props.rankedSpecies.find((r) => r.rank === 2 && r.species_id === specie_id.value),
+    third: props.rankedSpecies.find((r) => r.rank === 3 && r.species_id === specie_id.value),
+}));
+
 const listRows = computed(() => props.ranking.filter((r) => r.rank > 3 && !r.is_current_user));
 const meInList = computed(() => props.me && props.me.rank > 3);
 
-function profileHref(e: Entry) {
+const listRowsBySpecies = computed(() => props.rankedSpecies.filter((r) => r.rank > 3 && !r.is_current_user && r.species_id === specie_id.value));
+const meInListBySpecies = computed(() => props.rankedSpecies.some((r) => r.is_current_user && r.species_id === specie_id.value && r.rank > 3));
+const meBySpecies = computed(() => props.rankedSpecies.find((r) => r.is_current_user && r.species_id === specie_id.value && r.rank > 3));
+
+function profileHref(e: {id: number, is_current_user: boolean}) {
     return e.is_current_user ? '/profile' : `/profile/${e.id}`;
 }
+
 </script>
 
 <template>
@@ -52,7 +84,7 @@ function profileHref(e: Entry) {
                 v-for="t in tabs"
                 :key="t.key"
                 class="tab"
-                :class="{ active: t.key === scope, disabled: t.key === 'species' }"
+                :class="{ active: t.key === scope}"
                 @click="selectTab(t.key)"
             >{{ t.label }}</span>
         </div>
@@ -62,6 +94,59 @@ function profileHref(e: Entry) {
         <Icon name="user-plus" :size="34" color="var(--text-locked)" />
         <p>Todavía no sigues a otros pescadores.</p>
     </div>
+
+    <div v-else-if="showSearchBySpeciesBar">
+        <!-- podium -->
+        <div class="podium">
+            <component :is="podiumBySpecies.second ? Link : 'div'" :href="podiumBySpecies.second ? profileHref(podiumBySpecies.second) : undefined" class="col" :class="{ tappable: podiumBySpecies.second }">
+                <div class="pavatar silver" />
+                <div class="pname">{{ podiumBySpecies.second?.name ?? '—' }}</div>
+                <div class="bar second">2</div>
+            </component>
+            <component :is="podiumBySpecies.first ? Link : 'div'" :href="podiumBySpecies.first ? profileHref(podiumBySpecies.first) : undefined" class="col" :class="{ tappable: podiumBySpecies.first }">
+                <div class="pavatar gold">
+                    <Icon name="crown" :size="20" color="var(--accent-pdx)" class="crown" />
+                </div>
+                <div class="pname">{{ podiumBySpecies.first?.name ?? '—' }}</div>
+                <div class="bar first">1</div>
+            </component>
+            <component :is="podiumBySpecies.third ? Link : 'div'" :href="podiumBySpecies.third ? profileHref(podiumBySpecies.third) : undefined" class="col" :class="{ tappable: podiumBySpecies.third }">
+                <div class="pavatar bronze" />
+                <div class="pname">{{ podiumBySpecies.third?.name ?? '—' }}</div>
+                <div class="bar third">3</div>
+            </component>
+        </div>
+
+        <!-- species filter -->
+        <div class="species-chip-wrap">
+            <div class="species-chip">
+                <Icon name="fish" :size="16" color="var(--teal)" />
+                <select v-model="specie_id" class="species-select">
+                    <option v-for="s in props.species" :key="s.id" :value="s.id">{{ s.name }}</option>
+                </select>
+                <Icon name="chevron-down" :size="14" color="var(--text-faint)" />
+            </div>
+        </div>
+
+        <!-- list -->
+        <div class="list">
+            <Link v-for="r in listRowsBySpecies" :key="r.id" :href="profileHref(r)" class="row tappable">
+                <span class="rank">{{ r.rank }}</span>
+                <div class="ravatar" />
+                <span class="rname">{{ r.name }}</span>
+                <span class="rscore">{{ r.total_xp }} esp.</span>
+            </Link>
+
+            <Link v-if="meInListBySpecies" href="/profile" class="row me">
+                <span class="rank me-rank">{{ meBySpecies?.rank }}</span>
+                <div class="ravatar me-avatar" />
+                <span class="rname strong">Tú · {{ meBySpecies?.name }}</span>
+                <span class="rscore me-score">{{ meBySpecies?.total_xp }} esp.</span>
+            </Link>
+        </div>
+
+    </div>
+
 
     <template v-else>
         <!-- podium -->
@@ -286,5 +371,32 @@ function profileHref(e: Entry) {
 }
 .bottom-spacer {
     height: 40px;
+}
+.species-chip-wrap {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 18px 4px;
+}
+.species-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-alt);
+    border: 1px solid var(--field-border);
+    border-radius: 999px;
+    padding: 6px 14px;
+}
+.species-select {
+    background: none;
+    border: 0;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    appearance: none;
+}
+.species-select option {
+    color: #15303d;
 }
 </style>

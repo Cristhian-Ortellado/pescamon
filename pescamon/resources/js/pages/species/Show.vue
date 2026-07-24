@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
+import CatchPhoto from '@/components/pescadex/CatchPhoto.vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import RarityBadge from '@/components/pescadex/RarityBadge.vue';
-import CatchPhoto from '@/components/pescadex/CatchPhoto.vue';
+import { goBack } from '@/lib/navigation';
 import { formatDateEs } from '@/lib/pescadex';
 
 interface UserCatch {
@@ -42,7 +43,7 @@ const heroImage = props.personalBest?.image_path ?? null;
         <CatchPhoto :path="heroImage" :rarity="species.rarity" :stripe="11" :alt="species.name" />
         <div class="hero-fade" />
         <div class="hero-actions">
-            <button class="round" @click="router.visit('/profile')"><Icon name="arrow-left" :size="20" /></button>
+            <button class="round" @click="goBack('/profile')"><Icon name="arrow-left" :size="20" /></button>
         </div>
         <RarityBadge :rarity="species.rarity" class="hero-badge" />
     </div>

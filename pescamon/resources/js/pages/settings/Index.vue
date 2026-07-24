@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { goBack } from '@/lib/navigation';
 import { useAppearance } from '@/composables/useAppearance';
 import Icon from '@/components/pescadex/Icon.vue';
 
@@ -52,7 +53,7 @@ function logout() {
     <div class="head">
         <div class="top-gap" />
         <div class="app-bar">
-            <button class="ic" @click="router.visit('/profile')"><Icon name="arrow-left" :size="23" color="var(--icon-muted)" /></button>
+            <button class="ic" @click="goBack('/profile')"><Icon name="arrow-left" :size="23" color="var(--icon-muted)" /></button>
             <span class="title">Ajustes</span>
         </div>
     </div>

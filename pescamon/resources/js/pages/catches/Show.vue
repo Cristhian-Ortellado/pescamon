@@ -5,6 +5,7 @@ import Icon from '@/components/pescadex/Icon.vue';
 import RarityBadge from '@/components/pescadex/RarityBadge.vue';
 import CatchPhoto from '@/components/pescadex/CatchPhoto.vue';
 import Avatar from '@/components/pescadex/Avatar.vue';
+import { goBack } from '@/lib/navigation';
 import { formatDateEs, methodLabel, waterLabel } from '@/lib/pescadex';
 
 interface Comment {
@@ -67,7 +68,7 @@ function submitComment() {
             <CatchPhoto :path="item.image_path" :rarity="item.species.rarity" :stripe="11" :alt="item.species.name" />
             <div class="hero-fade" />
             <div class="hero-actions">
-                <button class="round" @click="router.visit('/dashboard')"><Icon name="arrow-left" :size="20" /></button>
+                <button class="round" @click="goBack('/feed')"><Icon name="arrow-left" :size="20" /></button>
                 <Link :href="`/species/${item.species.slug}`" class="round"><Icon name="fish" :size="18" /></Link>
             </div>
             <div class="species-tag">

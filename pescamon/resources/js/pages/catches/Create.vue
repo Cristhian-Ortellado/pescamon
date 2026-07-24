@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
+import { goBack as back } from '@/lib/navigation';
 import { ref, computed } from 'vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import RarityBadge from '@/components/pescadex/RarityBadge.vue';
@@ -80,11 +81,7 @@ return;
 }
 
 function goBack() {
-    if (window.history.length > 1) {
-        window.history.back();
-    } else {
-        router.visit('/dashboard');
-    }
+    back('/dashboard');
 }
 
 function save() {

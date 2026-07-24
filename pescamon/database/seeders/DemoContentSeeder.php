@@ -105,7 +105,7 @@ class DemoContentSeeder extends Seeder
                 'status' => 'verified',
                 'xp_earned' => 0,
                 'is_personal_best' => false,
-                'image_path' => 'storage/app/public/images/species/amarillo-placeholder.png',
+                'image_path' => 'catches/S5h4WRxpS8ywYEThAcOkEVaHTkcqeyBRqYmqmccv.png',
             ]);
 
             $reward = $leveling->calculateCatchReward($user, $catch);

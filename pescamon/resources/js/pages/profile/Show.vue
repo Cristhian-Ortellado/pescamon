@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { goBack } from '@/lib/navigation';
 import Icon from '@/components/pescadex/Icon.vue';
 import SpeciesCard from '@/components/pescadex/SpeciesCard.vue';
 import StatCard from '@/components/pescadex/StatCard.vue';
@@ -149,7 +150,7 @@ function toggleFollow() {
         <div class="pub-banner">
             <div class="top-gap" />
             <div class="top-bar">
-                <button class="ic" @click="router.visit('/leaderboard')"><Icon name="arrow-left" :size="23" /></button>
+                <button class="ic" @click="goBack('/feed')"><Icon name="arrow-left" :size="23" /></button>
                 <Icon name="more-horizontal" :size="22" color="var(--icon-muted)" />
             </div>
             <div class="pub-who">

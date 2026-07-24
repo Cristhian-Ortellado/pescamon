@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
+import { goBack } from '@/lib/navigation';
 import { ref } from 'vue';
 import ManagePasskeys from '@/components/ManagePasskeys.vue';
 import type { Props as ManagePasskeysProps } from '@/components/ManagePasskeys.vue';
@@ -39,7 +40,7 @@ function save() {
     <div class="head">
         <div class="top-gap" />
         <div class="app-bar">
-            <button class="ic" @click="router.visit('/settings')">
+            <button class="ic" @click="goBack('/settings')">
                 <Icon name="arrow-left" :size="23" color="var(--icon-muted)" />
             </button>
             <span class="title">Seguridad</span>

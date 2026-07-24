@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { goBack } from '@/lib/navigation';
 import { computed, nextTick, ref, useTemplateRef } from 'vue';
 import Icon from '@/components/pescadex/Icon.vue';
 
@@ -105,7 +106,7 @@ function confirmDelete() {
     <div class="head">
         <div class="top-gap" />
         <div class="app-bar">
-            <button class="ic" @click="router.visit('/settings')">
+            <button class="ic" @click="goBack('/settings')">
                 <Icon name="arrow-left" :size="23" color="var(--icon-muted)" />
             </button>
             <span class="title">Editar perfil</span>

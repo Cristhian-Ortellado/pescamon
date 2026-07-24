@@ -18,7 +18,7 @@ class CatchFactory extends Factory
             'species_id' => Species::factory(),
             'weight_kg' => round($this->faker->randomFloat(3, 0.1, 30), 3),
             'length_cm' => round($this->faker->randomFloat(2, 5, 150), 2),
-            'image_path' => '/images/species/amarillo-placeholder.png',
+            'image_path' => 'images/species/amarillo-placeholder.png',
             'thumbnail_path' => 'thumbnails/'. rand(1, 6) .'.jpg',
             // Bounding box of Paraguay (approx.): lat -27.6..-19.3, lng -62.6..-54.3.
             'latitude' => $this->faker->latitude(-27.6, -19.3),

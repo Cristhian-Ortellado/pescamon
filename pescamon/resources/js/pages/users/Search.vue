@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
+import { goBack } from '@/lib/navigation';
 import Avatar from '@/components/pescadex/Avatar.vue';
 import Icon from '@/components/pescadex/Icon.vue';
 
@@ -49,7 +50,7 @@ function toggleFollow(id: number) {
     <div class="head">
         <div class="top-gap" />
         <div class="app-bar">
-            <button class="ic" @click="router.visit('/feed')">
+            <button class="ic" @click="goBack('/feed')">
                 <Icon name="arrow-left" :size="23" color="var(--icon-muted)" />
             </button>
             <span class="title">Buscar amigos</span>

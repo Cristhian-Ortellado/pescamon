@@ -9,6 +9,7 @@ import PasskeyVerify from '@/components/PasskeyVerify.vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import { Spinner } from '@/components/ui/spinner';
 import PescadexLayout from '@/layouts/PescadexLayout.vue';
+import { goBack as back } from '@/lib/navigation';
 import { store } from '@/routes/password/confirm';
 
 defineOptions({
@@ -18,7 +19,7 @@ defineOptions({
 const showPassword = ref(false);
 
 function goBack() {
-    window.history.back();
+    back('/dashboard');
 }
 </script>
 

@@ -41,7 +41,7 @@ const isEmpty = computed(() => props.profileUser.is_own_profile && props.stats.s
 
 const tab = ref<'all' | 'caught'>('all');
 const shown = computed(() => (tab.value === 'caught' ? props.pokedex.filter((s) => s.caught) : props.pokedex));
-const featured = computed(() => props.pokedex.filter((s) => s.caught).slice(0, 6));
+const caughtSpecies = computed(() => props.pokedex.filter((s) => s.caught));
 
 function openSpecies(entry: PokedexEntry) {
     if (entry.caught) {
@@ -175,11 +175,11 @@ function toggleFollow() {
         </div>
 
         <div class="section-head">
-            <div class="section-title">Colección destacada</div>
+            <div class="section-title">Especies capturadas</div>
         </div>
         <div class="grid">
             <SpeciesCard
-                v-for="s in featured"
+                v-for="s in caughtSpecies"
                 :key="s.id"
                 :name="s.name"
                 :rarity="s.rarity"
@@ -187,7 +187,7 @@ function toggleFollow() {
                 :image-path="s.image_path"
                 @click="openSpecies(s)"
             />
-            <p v-if="featured.length === 0" class="muted-note">Aún no tiene capturas verificadas.</p>
+            <p v-if="caughtSpecies.length === 0" class="muted-note">Aún no tiene capturas verificadas.</p>
         </div>
         <div class="bottom-spacer" />
     </template>

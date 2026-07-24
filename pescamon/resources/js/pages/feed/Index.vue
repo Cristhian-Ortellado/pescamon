@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
+import Avatar from '@/components/pescadex/Avatar.vue';
+import CatchPhoto from '@/components/pescadex/CatchPhoto.vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import RarityBadge from '@/components/pescadex/RarityBadge.vue';
-import CatchPhoto from '@/components/pescadex/CatchPhoto.vue';
-import Avatar from '@/components/pescadex/Avatar.vue';
 import { timeAgo } from '@/lib/pescadex';
 
 interface Post {
@@ -20,6 +20,7 @@ interface Post {
     is_personal_best: boolean;
     is_own: boolean;
     is_following: boolean;
+    is_suggestion: boolean;
 }
 
 defineProps<{ posts: Post[]; unreadCount: number }>();
@@ -43,7 +44,7 @@ function follow(id: number) {
         <div class="head-row">
             <span class="screen-title">Feed</span>
             <div class="head-actions">
-                <Link href="/leaderboard"><Icon name="user-plus" :size="21" color="var(--icon-muted)" /></Link>
+                <Link href="/users/search"><Icon name="user-plus" :size="21" color="var(--icon-muted)" /></Link>
                 <Link href="/notifications" class="icon-btn">
                     <Icon name="bell" :size="21" color="var(--icon-muted)" />
                     <span v-if="unreadCount" class="badge-dot" />
@@ -72,7 +73,10 @@ function follow(id: number) {
             >
                 <Avatar :size="38" :src="post.author.avatar" :alt="post.author.name" />
                 <div class="author">
-                    <div class="name">{{ post.author.name }}</div>
+                    <div class="name-row">
+                        <span class="name">{{ post.author.name }}</span>
+                        <span v-if="post.is_suggestion" class="suggestion-tag">Sugerencia</span>
+                    </div>
                     <div class="meta">
                         <template v-if="post.location_name">{{ post.location_name }} · </template>{{ timeAgo(post.caught_at) }}
                     </div>
@@ -190,10 +194,27 @@ function follow(id: number) {
     flex: 1;
     min-width: 0;
 }
+.name-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
 .author .name {
     font-weight: 600;
     font-size: 14px;
     color: var(--text);
+}
+.suggestion-tag {
+    flex: none;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--teal);
+    background: rgba(31, 111, 106, 0.16);
+    border: 1px solid rgba(31, 111, 106, 0.5);
+    border-radius: 999px;
+    padding: 2px 7px;
 }
 .author .meta {
     font-size: 11.5px;

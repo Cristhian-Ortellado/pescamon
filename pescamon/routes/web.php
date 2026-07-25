@@ -41,6 +41,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/read', [NotificationController::class, 'markAllRead'])->name('notifications.read');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.readOne');
 });
 
 require __DIR__.'/settings.php';

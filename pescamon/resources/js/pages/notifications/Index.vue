@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import Icon from '@/components/pescadex/Icon.vue';
 
 interface Segment {
@@ -37,7 +37,21 @@ function markAllRead() {
     router.post('/notifications/read', {}, { preserveScroll: true });
 }
 function open(n: NotificationItem) {
-    if (n.catch_id) router.visit(`/catches/${n.catch_id}`);
+    const goToCatch = () => {
+        if (n.catch_id) {
+router.visit(`/catches/${n.catch_id}`);
+}
+    };
+
+    if (n.unread) {
+        router.post(
+            `/notifications/${n.id}/read`,
+            {},
+            { preserveScroll: true, onSuccess: goToCatch },
+        );
+    } else {
+        goToCatch();
+    }
 }
 </script>
 

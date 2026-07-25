@@ -63,4 +63,15 @@ class NotificationController extends Controller
 
         return back();
     }
+
+    /** Mark a single notification as read (e.g. when the user taps it). */
+    public function markRead(Request $request, string $notification): RedirectResponse
+    {
+        $request->user()->notifications()
+            ->where('id', $notification)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return back();
+    }
 }

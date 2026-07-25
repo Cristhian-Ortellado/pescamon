@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
+import { onClickOutside } from '@vueuse/core';
 import { ref, onMounted, computed, watch } from 'vue';
 import FishPhoto from '@/components/pescadex/FishPhoto.vue';
 import Icon from '@/components/pescadex/Icon.vue';
@@ -32,17 +33,23 @@ const locating = ref(false);
 // shows everything.
 const filteredCatches = computed(() => {
     const q = query.value.trim().toLowerCase();
+    const speciesId = selectedSpeciesId.value;
 
-    if (!q) {
-        return props.mapCatches;
-    }
+    return props.mapCatches.filter((c) => {
+        if (speciesId !== null && c.species.id !== speciesId) {
+            return false;
+        }
 
-    return props.mapCatches.filter(
-        (c) =>
+        if (!q) {
+            return true;
+        }
+
+        return (
             c.species.name.toLowerCase().includes(q) ||
             (c.location_name?.toLowerCase().includes(q) ?? false) ||
-            c.user.name.toLowerCase().includes(q),
-    );
+            c.user.name.toLowerCase().includes(q)
+        );
+    });
 });
 
 const peek = computed(() => filteredCatches.value[0] ?? null);
@@ -67,7 +74,38 @@ const rarityColor: Record<string, string> = {
     legendary: '#FF8000',
 };
 
-const filters = ['Especie'];
+// 'Especie' filter: pick one of the species currently on the map.
+const speciesOpen = ref(false);
+const selectedSpeciesId = ref<number | null>(null);
+
+const speciesOptions = computed(() => {
+    const seen = new Map<number, { id: number; name: string; rarity: string }>();
+    props.mapCatches.forEach((c) => {
+        if (!seen.has(c.species.id)) {
+            seen.set(c.species.id, {
+                id: c.species.id,
+                name: c.species.name,
+                rarity: c.species.rarity,
+            });
+        }
+    });
+
+    return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
+});
+
+const selectedSpeciesName = computed(
+    () => speciesOptions.value.find((s) => s.id === selectedSpeciesId.value)?.name ?? null,
+);
+
+const chipWrap = ref<HTMLElement | null>(null);
+onClickOutside(chipWrap, () => {
+    speciesOpen.value = false;
+});
+
+function selectSpecies(id: number | null) {
+    selectedSpeciesId.value = id;
+    speciesOpen.value = false;
+}
 
 function escapeHtml(value: string): string {
     return value.replace(
@@ -254,8 +292,8 @@ watch(filteredCatches, (list) => {
         }
     });
 
-    // Frame the results only while actively searching.
-    if (query.value.trim() && visiblePoints.length) {
+    // Frame the results only while a search or species filter is active.
+    if ((query.value.trim() || selectedSpeciesId.value !== null) && visiblePoints.length) {
         mapInstance.fitBounds(visiblePoints, {
             padding: [60, 60],
             maxZoom: 13,
@@ -296,14 +334,52 @@ watch(filteredCatches, (list) => {
                 /></span>
             </div>
             <div class="chips">
-                <span
-                    v-for="(f, i) in filters"
-                    :key="f"
-                    class="chip"
-                    :class="{ active: i === 0 }"
-                >
-                    {{ f }} <Icon name="chevron-down" :size="13" />
-                </span>
+                <div ref="chipWrap" class="chip-wrap">
+                    <div class="chip" :class="{ active: selectedSpeciesId !== null }">
+                        <button class="chip-label" @click="speciesOpen = !speciesOpen">
+                            {{ selectedSpeciesName ?? 'Especie' }}
+                        </button>
+                        <button
+                            v-if="selectedSpeciesId !== null"
+                            class="chip-btn"
+                            aria-label="Quitar filtro de especie"
+                            @click.stop="selectSpecies(null)"
+                        >
+                            <Icon name="x" :size="13" />
+                        </button>
+                        <button
+                            v-else
+                            class="chip-btn"
+                            aria-label="Abrir filtro de especie"
+                            @click="speciesOpen = !speciesOpen"
+                        >
+                            <Icon name="chevron-down" :size="13" />
+                        </button>
+                    </div>
+
+                    <div v-if="speciesOpen" class="dropdown">
+                        <button
+                            class="dd-item"
+                            :class="{ sel: selectedSpeciesId === null }"
+                            @click="selectSpecies(null)"
+                        >
+                            Todas las especies
+                        </button>
+                        <button
+                            v-for="s in speciesOptions"
+                            :key="s.id"
+                            class="dd-item"
+                            :class="{ sel: selectedSpeciesId === s.id }"
+                            @click="selectSpecies(s.id)"
+                        >
+                            <span
+                                class="dd-dot"
+                                :style="{ background: rarityColor[s.rarity] ?? '#64748b' }"
+                            />
+                            {{ s.name }}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -427,7 +503,7 @@ watch(filteredCatches, (list) => {
 .chip {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     padding: 7px 12px;
     background: var(--glass-bg);
     border: 1px solid var(--border-strong);
@@ -440,6 +516,72 @@ watch(filteredCatches, (list) => {
     background: var(--glass-bg);
     border-color: rgba(45, 212, 191, 0.5);
     color: var(--teal-chip-text);
+}
+.chip-label,
+.chip-btn {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    cursor: pointer;
+}
+.chip-btn {
+    margin-left: 1px;
+}
+.chip.active .chip-btn {
+    color: var(--teal);
+}
+.chip-wrap {
+    position: relative;
+}
+.dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 15;
+    min-width: 190px;
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--glass-strong);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+    padding: 6px;
+}
+.dd-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    color: var(--text-soft);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 10px;
+    border-radius: 9px;
+    cursor: pointer;
+}
+.dd-item:hover {
+    background: var(--glass-bg);
+}
+.dd-item.sel {
+    color: var(--teal);
+    background: rgba(45, 212, 191, 0.12);
+}
+.dd-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: none;
 }
 .peek {
     position: absolute;

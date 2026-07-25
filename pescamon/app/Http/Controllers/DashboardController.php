@@ -30,6 +30,7 @@ class DashboardController extends Controller
                 'species' => $c->species->only(['id', 'name', 'slug', 'rarity']),
                 'weight_kg' => (float) $c->weight_kg,
                 'image_path' => $c->thumbnail_path ?: $c->image_path,
+                'location_name' => $c->location_name,
                 'caught_at' => $c->caught_at->toISOString(),
                 'latitude' => $this->applyPrivacy($c->user->location_privacy, (float) $c->latitude, 'lat'),
                 'longitude' => $this->applyPrivacy($c->user->location_privacy, (float) $c->longitude, 'lng'),

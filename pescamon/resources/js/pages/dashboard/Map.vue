@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import FishPhoto from '@/components/pescadex/FishPhoto.vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import RarityBadge from '@/components/pescadex/RarityBadge.vue';
@@ -11,6 +11,7 @@ interface MapCatch {
     species: { id: number; name: string; slug: string; rarity: string };
     weight_kg: number;
     image_path: string | null;
+    location_name: string | null;
     caught_at: string;
     latitude: number;
     longitude: number;
@@ -24,8 +25,27 @@ const props = defineProps<{
 }>();
 
 const mapContainer = ref<HTMLElement | null>(null);
-const peek = computed(() => props.mapCatches[0] ?? null);
+const query = ref('');
 const locating = ref(false);
+
+// Catches matching the search box (species name, zone or angler). Empty query
+// shows everything.
+const filteredCatches = computed(() => {
+    const q = query.value.trim().toLowerCase();
+
+    if (!q) {
+        return props.mapCatches;
+    }
+
+    return props.mapCatches.filter(
+        (c) =>
+            c.species.name.toLowerCase().includes(q) ||
+            (c.location_name?.toLowerCase().includes(q) ?? false) ||
+            c.user.name.toLowerCase().includes(q),
+    );
+});
+
+const peek = computed(() => filteredCatches.value[0] ?? null);
 
 // Leaflet is loaded lazily; keep the references so the locate button can reuse
 // the same map instance after mount. (leaflet ships no types → typed as any.)
@@ -36,6 +56,10 @@ let mapInstance: any = null;
 
 let userMarker: any = null;
 
+// Catch id → marker, so search can toggle each marker's visibility.
+
+const markers: { c: MapCatch; marker: any }[] = [];
+
 const rarityColor: Record<string, string> = {
     common: '#64748b',
     uncommon: '#34d399',
@@ -43,13 +67,19 @@ const rarityColor: Record<string, string> = {
     legendary: '#FF8000',
 };
 
-const filters = ['Especie', 'Peso mín', 'Método'];
+const filters = ['Especie'];
 
 function escapeHtml(value: string): string {
     return value.replace(
         /[&<>"']/g,
         (ch) =>
-            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch] as string,
+            ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+            })[ch] as string,
     );
 }
 
@@ -112,17 +142,23 @@ function userLocationIcon() {
 // Silently keeps the current view if permission is denied or unavailable.
 function locateUser(recenter = true) {
     if (!mapInstance || !leaflet || !('geolocation' in navigator)) {
-return;
-}
+        return;
+    }
 
     locating.value = true;
     navigator.geolocation.getCurrentPosition(
         (pos) => {
-            const latlng: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+            const latlng: [number, number] = [
+                pos.coords.latitude,
+                pos.coords.longitude,
+            ];
 
             if (!userMarker) {
                 userMarker = leaflet
-                    .marker(latlng, { icon: userLocationIcon(), zIndexOffset: 1000 })
+                    .marker(latlng, {
+                        icon: userLocationIcon(),
+                        zIndexOffset: 1000,
+                    })
                     .addTo(mapInstance);
             } else {
                 userMarker.setLatLng(latlng);
@@ -143,18 +179,22 @@ return;
 
 onMounted(async () => {
     if (!mapContainer.value) {
-return;
-}
+        return;
+    }
 
     leaflet = await import('leaflet');
     await import('leaflet/dist/leaflet.css');
 
-    mapInstance = leaflet.map(mapContainer.value, { zoomControl: false }).setView([40.4, -3.7], 5);
+    mapInstance = leaflet
+        .map(mapContainer.value, { zoomControl: false })
+        .setView([40.4, -3.7], 5);
 
-    leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        maxZoom: 18,
-    }).addTo(mapInstance);
+    leaflet
+        .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 18,
+        })
+        .addTo(mapInstance);
 
     const points: [number, number][] = [];
 
@@ -166,7 +206,9 @@ return;
             iconSize: [20, 20],
             iconAnchor: [10, 10],
         });
-        const marker = leaflet.marker([c.latitude, c.longitude], { icon }).addTo(mapInstance);
+        const marker = leaflet
+            .marker([c.latitude, c.longitude], { icon })
+            .addTo(mapInstance);
         // Show a small info popup (user + catch) instead of navigating away.
         // The content is built lazily the first time the marker is opened.
         marker.bindPopup(() => buildPopup(c), {
@@ -175,16 +217,50 @@ return;
             maxWidth: 230,
             className: 'map-pop-wrap',
         });
+        markers.push({ c, marker });
         points.push([c.latitude, c.longitude]);
     });
 
     // Fallback framing until (and unless) geolocation resolves below.
     if (points.length) {
-        mapInstance.fitBounds(points as [number, number][], { padding: [60, 60], maxZoom: 9 });
+        mapInstance.fitBounds(points as [number, number][], {
+            padding: [60, 60],
+            maxZoom: 9,
+        });
     }
 
     // Default: center on the authenticated user's current location.
     locateUser(true);
+});
+
+// Live search: toggle marker visibility and frame the matches on the map.
+watch(filteredCatches, (list) => {
+    if (!mapInstance) {
+        return;
+    }
+
+    const visibleIds = new Set(list.map((c) => c.id));
+    const visiblePoints: [number, number][] = [];
+
+    markers.forEach(({ c, marker }) => {
+        if (visibleIds.has(c.id)) {
+            if (!mapInstance.hasLayer(marker)) {
+                marker.addTo(mapInstance);
+            }
+
+            visiblePoints.push([c.latitude, c.longitude]);
+        } else if (mapInstance.hasLayer(marker)) {
+            mapInstance.removeLayer(marker);
+        }
+    });
+
+    // Frame the results only while actively searching.
+    if (query.value.trim() && visiblePoints.length) {
+        mapInstance.fitBounds(visiblePoints, {
+            padding: [60, 60],
+            maxZoom: 13,
+        });
+    }
 });
 </script>
 
@@ -198,11 +274,34 @@ return;
         <div class="top">
             <div class="search">
                 <Icon name="search" :size="19" color="var(--text-faint)" />
-                <span class="placeholder">Buscar especie o zona…</span>
-                <span class="filter-btn"><Icon name="sliders-horizontal" :size="16" color="var(--teal)" /></span>
+                <input
+                    v-model="query"
+                    type="text"
+                    class="search-input"
+                    placeholder="Buscar especie, zona o pescador…"
+                />
+                <button
+                    v-if="query"
+                    class="clear-btn"
+                    aria-label="Limpiar"
+                    @click="query = ''"
+                >
+                    <Icon name="x" :size="16" color="var(--text-faint)" />
+                </button>
+                <span v-else class="filter-btn"
+                    ><Icon
+                        name="sliders-horizontal"
+                        :size="16"
+                        color="var(--teal)"
+                /></span>
             </div>
             <div class="chips">
-                <span v-for="(f, i) in filters" :key="f" class="chip" :class="{ active: i === 0 }">
+                <span
+                    v-for="(f, i) in filters"
+                    :key="f"
+                    class="chip"
+                    :class="{ active: i === 0 }"
+                >
                     {{ f }} <Icon name="chevron-down" :size="13" />
                 </span>
             </div>
@@ -210,11 +309,16 @@ return;
 
         <!-- peek card -->
         <Link v-if="peek" :href="`/catches/${peek.id}`" class="peek">
-            <div class="thumb"><FishPhoto :rarity="peek.species.rarity" :stripe="7" /></div>
+            <div class="thumb">
+                <FishPhoto :rarity="peek.species.rarity" :stripe="7" />
+            </div>
             <div class="peek-body">
                 <div class="peek-title">
                     <span class="name">{{ peek.species.name }}</span>
-                    <RarityBadge :rarity="peek.species.rarity" variant="outline" />
+                    <RarityBadge
+                        :rarity="peek.species.rarity"
+                        variant="outline"
+                    />
                 </div>
                 <div class="peek-sub">{{ timeAgo(peek.caught_at) }}</div>
             </div>
@@ -232,7 +336,11 @@ return;
             aria-label="Centrar en mi ubicación"
             @click="locateUser(true)"
         >
-            <Icon name="locate-fixed" :size="21" :color="locating ? 'var(--text-faint)' : 'var(--teal)'" />
+            <Icon
+                name="locate-fixed"
+                :size="21"
+                :color="locating ? 'var(--text-faint)' : 'var(--teal)'"
+            />
         </button>
 
         <!-- FAB -->
@@ -275,9 +383,31 @@ return;
     padding: 12px 14px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
-.placeholder {
-    color: var(--text-muted);
+.search-input {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: 0;
+    outline: none;
+    color: var(--text);
+    font-family: inherit;
     font-size: 14.5px;
+    padding: 0;
+}
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+.clear-btn {
+    margin-left: auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: none;
+    border: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
 }
 .filter-btn {
     margin-left: auto;
@@ -307,7 +437,7 @@ return;
     font-weight: 600;
 }
 .chip.active {
-    background: rgba(45, 212, 191, 0.16);
+    background: var(--glass-bg);
     border-color: rgba(45, 212, 191, 0.5);
     color: var(--teal-chip-text);
 }

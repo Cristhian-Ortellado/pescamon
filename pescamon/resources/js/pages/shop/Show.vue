@@ -2,6 +2,7 @@
 import { Head } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import Icon from '@/components/pescadex/Icon.vue';
+import ImageCarousel from '@/components/pescadex/ImageCarousel.vue';
 import { goBack } from '@/lib/navigation';
 import { formatPrice } from '@/lib/pescadex';
 
@@ -11,7 +12,7 @@ interface Product {
     slug: string;
     description: string;
     price: number | string;
-    image_url: string | null;
+    images: { id: number; url: string }[];
 }
 
 const props = defineProps<{ product: Product; whatsapp: string }>();
@@ -28,14 +29,8 @@ const whatsappUrl = computed(() => {
     <Head :title="product.name" />
 
     <div class="detail">
-        <div class="media" :class="{ empty: !product.image_url }">
-            <img
-                v-if="product.image_url"
-                :src="product.image_url"
-                :alt="product.name"
-                class="media-img"
-            />
-            <Icon v-else name="package" :size="56" color="var(--text-faint)" />
+        <div class="media">
+            <ImageCarousel :images="product.images" :alt="product.name" ratio="4 / 3" />
 
             <button class="back" aria-label="Volver" @click="goBack('/tienda')">
                 <Icon name="arrow-left" :size="22" />
@@ -68,26 +63,6 @@ const whatsappUrl = computed(() => {
 .media {
     position: relative;
     width: 100%;
-    aspect-ratio: 4 / 3;
-    background: var(--bg-frame);
-    overflow: hidden;
-}
-.media.empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: repeating-linear-gradient(
-        135deg,
-        var(--bg-frame),
-        var(--bg-frame) 14px,
-        var(--surface-alt) 14px,
-        var(--surface-alt) 28px
-    );
-}
-.media-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 .back {
     position: absolute;

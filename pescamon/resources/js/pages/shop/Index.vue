@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import Icon from '@/components/pescadex/Icon.vue';
-import { formatPrice, storageUrl } from '@/lib/pescadex';
+import ImageCarousel from '@/components/pescadex/ImageCarousel.vue';
+import { formatPrice } from '@/lib/pescadex';
 
 interface Product {
     id: number;
@@ -9,7 +10,7 @@ interface Product {
     slug: string;
     description: string;
     price: number | string;
-    image_path: string | null;
+    images: { id: number; url: string }[];
 }
 
 defineProps<{ products: Product[] }>();
@@ -34,15 +35,7 @@ defineProps<{ products: Product[] }>();
                 :href="`/tienda/${p.slug}`"
                 class="card"
             >
-                <div class="media" :class="{ empty: !p.image_path }">
-                    <img
-                        v-if="p.image_path"
-                        :src="storageUrl(p.image_path) ?? ''"
-                        :alt="p.name"
-                        class="media-img"
-                    />
-                    <Icon v-else name="package" :size="34" color="var(--text-faint)" />
-                </div>
+                <ImageCarousel :images="p.images" :alt="p.name" ratio="16 / 10" />
                 <div class="body">
                     <div class="name">{{ p.name }}</div>
                     <div class="desc">{{ p.description }}</div>
@@ -118,30 +111,6 @@ defineProps<{ products: Product[] }>();
 }
 .card:hover {
     border-color: rgba(245, 165, 36, 0.4);
-}
-.media {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 10;
-    background: var(--bg-frame);
-    overflow: hidden;
-}
-.media.empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: repeating-linear-gradient(
-        135deg,
-        var(--bg-frame),
-        var(--bg-frame) 12px,
-        var(--surface-alt) 12px,
-        var(--surface-alt) 24px
-    );
-}
-.media-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 .body {
     padding: 13px 15px 15px;

@@ -20,7 +20,6 @@ class ProductFactory extends Factory
             'description' => $this->faker->paragraph(3),
             // Whole guaraníes, rounded to the nearest thousand.
             'price' => $this->faker->numberBetween(50, 3000) * 1000,
-            'image_path' => null,
             'is_active' => true,
         ];
     }
@@ -28,5 +27,18 @@ class ProductFactory extends Factory
     public function inactive(): static
     {
         return $this->state(['is_active' => false]);
+    }
+
+    /** Attach a number of gallery images in order. */
+    public function withImages(int $count = 3): static
+    {
+        return $this->afterCreating(function (\App\Models\Product $product) use ($count) {
+            for ($i = 0; $i < $count; $i++) {
+                $product->images()->create([
+                    'path' => 'products/'.\Illuminate\Support\Str::uuid().'.jpg',
+                    'position' => $i,
+                ]);
+            }
+        });
     }
 }

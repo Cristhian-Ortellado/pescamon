@@ -10,7 +10,8 @@ const form = useForm<ProductFormData>({
     price: '',
     description: '',
     is_active: true,
-    image: null,
+    images: [],
+    removed_image_ids: [],
 });
 
 function submit() {

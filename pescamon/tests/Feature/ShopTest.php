@@ -31,16 +31,18 @@ class ShopTest extends TestCase
                 ->where('products.0.id', $active->id));
     }
 
-    public function test_product_detail_is_visible_and_exposes_whatsapp(): void
+    public function test_product_detail_is_visible_with_ordered_images_and_whatsapp(): void
     {
         $this->actingAs(User::factory()->create());
-        $product = Product::factory()->create();
+        $product = Product::factory()->withImages(3)->create();
 
         $this->get(route('shop.show', $product))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('shop/Show')
                 ->where('product.id', $product->id)
+                ->has('product.images', 3)
+                ->has('product.images.0.url')
                 ->where('whatsapp', config('shop.whatsapp')));
     }
 

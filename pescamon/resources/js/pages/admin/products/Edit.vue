@@ -3,7 +3,7 @@ import { Head, useForm } from '@inertiajs/vue3';
 import Icon from '@/components/pescadex/Icon.vue';
 import { goBack } from '@/lib/navigation';
 import ProductForm from './ProductForm.vue';
-import type {ProductFormData} from './ProductForm.vue';
+import type { ProductFormData } from './ProductForm.vue';
 
 interface Product {
     id: number;
@@ -11,7 +11,7 @@ interface Product {
     slug: string;
     description: string;
     price: number | string;
-    image_url: string | null;
+    images: { id: number; url: string }[];
     is_active: boolean;
 }
 
@@ -22,7 +22,8 @@ const form = useForm<ProductFormData>({
     price: props.product.price,
     description: props.product.description,
     is_active: props.product.is_active,
-    image: null,
+    images: [],
+    removed_image_ids: [],
 });
 
 function submit() {
@@ -47,7 +48,7 @@ function submit() {
 
         <ProductForm
             :form="form"
-            :current-image="product.image_url"
+            :existing-images="product.images"
             submit-label="Guardar cambios"
             @submit="submit"
         />

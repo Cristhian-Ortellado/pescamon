@@ -4,56 +4,107 @@
 // pattern, hence vue/no-mutating-props is intentionally disabled here.
 /* eslint-disable vue/no-mutating-props */
 import type { InertiaForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import Icon from '@/components/pescadex/Icon.vue';
+
+export interface ExistingImage {
+    id: number;
+    url: string;
+}
 
 export interface ProductFormData {
     name: string;
     price: string | number;
     description: string;
     is_active: boolean;
-    image: File | null;
+    images: File[];
+    removed_image_ids: number[];
 }
 
-const props = defineProps<{
-    form: InertiaForm<ProductFormData>;
-    submitLabel: string;
-    currentImage?: string | null;
-}>();
+const props = withDefaults(
+    defineProps<{
+        form: InertiaForm<ProductFormData>;
+        submitLabel: string;
+        existingImages?: ExistingImage[];
+    }>(),
+    { existingImages: () => [] },
+);
 
 const emit = defineEmits<{ (e: 'submit'): void }>();
 
-const preview = ref<string | null>(props.currentImage ?? null);
+// Newly picked files with their object-URL previews, kept in sync with
+// form.images (the actual upload payload).
+const picked = ref<{ file: File; url: string }[]>([]);
 
-function onImageChange(e: Event) {
-    const file = (e.target as HTMLInputElement).files?.[0];
+// Existing images not marked for removal.
+const visibleExisting = computed(() =>
+    props.existingImages.filter((img) => !props.form.removed_image_ids.includes(img.id)),
+);
 
-    if (!file) {
-        return;
-    }
+const hasAnyImage = computed(() => visibleExisting.value.length + picked.value.length > 0);
 
-    props.form.image = file;
-    preview.value = URL.createObjectURL(file);
+function onFilesChange(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+
+    files.forEach((file) => picked.value.push({ file, url: URL.createObjectURL(file) }));
+    props.form.images = picked.value.map((p) => p.file);
+
+    // Allow re-selecting the same file later.
+    input.value = '';
 }
+
+function removePicked(index: number) {
+    URL.revokeObjectURL(picked.value[index].url);
+    picked.value.splice(index, 1);
+    props.form.images = picked.value.map((p) => p.file);
+}
+
+function removeExisting(id: number) {
+    if (!props.form.removed_image_ids.includes(id)) {
+        props.form.removed_image_ids.push(id);
+    }
+}
+
+onBeforeUnmount(() => picked.value.forEach((p) => URL.revokeObjectURL(p.url)));
 </script>
 
 <template>
     <!-- eslint-disable vue/no-mutating-props -->
     <form class="form" @submit.prevent="emit('submit')">
-        <!-- Image -->
-        <label class="field">
-            <span class="label">Imagen</span>
-            <div class="image-picker" :class="{ 'has-image': preview }">
-                <img v-if="preview" :src="preview" alt="" class="image-preview" />
-                <div v-else class="image-placeholder">
-                    <Icon name="upload" :size="26" color="var(--text-faint)" />
-                    <span>Subir imagen</span>
+        <!-- Images -->
+        <div class="field">
+            <span class="label">Imágenes</span>
+            <div class="thumbs">
+                <div v-for="img in visibleExisting" :key="`e${img.id}`" class="thumb">
+                    <img :src="img.url" alt="" class="thumb-img" />
+                    <button type="button" class="remove" aria-label="Quitar" @click="removeExisting(img.id)">
+                        <Icon name="x" :size="14" />
+                    </button>
                 </div>
-                <input type="file" accept="image/jpeg,image/png,image/webp" class="file-input" @change="onImageChange" />
-                <span v-if="preview" class="change-hint">Cambiar</span>
+                <div v-for="(p, i) in picked" :key="`n${i}`" class="thumb">
+                    <img :src="p.url" alt="" class="thumb-img" />
+                    <span class="new-tag">Nueva</span>
+                    <button type="button" class="remove" aria-label="Quitar" @click="removePicked(i)">
+                        <Icon name="x" :size="14" />
+                    </button>
+                </div>
+
+                <label class="add-tile">
+                    <Icon name="plus" :size="22" color="var(--text-faint)" />
+                    <span>Agregar</span>
+                    <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        multiple
+                        class="file-input"
+                        @change="onFilesChange"
+                    />
+                </label>
             </div>
-        </label>
-        <p v-if="form.errors.image" class="error">{{ form.errors.image }}</p>
+            <p class="hint">Deslizá en las cards para ver todas. La primera imagen es la portada.</p>
+        </div>
+        <p v-if="form.errors.images" class="error">{{ form.errors.images }}</p>
 
         <!-- Name -->
         <label class="field">
@@ -85,7 +136,7 @@ function onImageChange(e: Event) {
             <span class="switch" :class="{ on: form.is_active }"><span class="knob" /></span>
         </button>
 
-        <button type="submit" class="submit" :disabled="form.processing">
+        <button type="submit" class="submit" :disabled="form.processing || !hasAnyImage">
             {{ form.processing ? 'Guardando…' : submitLabel }}
         </button>
     </form>
@@ -129,34 +180,65 @@ function onImageChange(e: Event) {
     resize: vertical;
     line-height: 1.5;
 }
-.image-picker {
+.thumbs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+.thumb {
     position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 10;
-    border-radius: 14px;
-    border: 1px dashed var(--border-strong);
-    background: var(--surface-alt);
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: var(--surface-alt);
+    border: 1px solid var(--border-strong);
 }
-.image-picker.has-image {
-    border-style: solid;
-}
-.image-preview {
+.thumb-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-.image-placeholder {
+.remove {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 0;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.new-tag {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--accent-ink);
+    background: var(--accent-pdx);
+    padding: 1px 6px;
+    border-radius: 999px;
+}
+.add-tile {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    border: 1px dashed var(--border-strong);
+    background: var(--surface-alt);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 5px;
     color: var(--text-faint);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
+    cursor: pointer;
 }
 .file-input {
     position: absolute;
@@ -164,17 +246,10 @@ function onImageChange(e: Event) {
     opacity: 0;
     cursor: pointer;
 }
-.change-hint {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background: var(--glass-strong);
-    color: var(--text);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 5px 11px;
-    border-radius: 999px;
-    backdrop-filter: blur(6px);
+.hint {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
 }
 .toggle-row {
     display: flex;

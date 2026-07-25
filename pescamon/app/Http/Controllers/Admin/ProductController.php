@@ -16,8 +16,18 @@ class ProductController extends Controller
     public function index(): Response
     {
         $products = Product::query()
+            ->with('images:id,product_id,path,position')
             ->latest()
-            ->get(['id', 'name', 'slug', 'description', 'price', 'image_path', 'is_active']);
+            ->get(['id', 'name', 'slug', 'description', 'price', 'is_active'])
+            ->map(fn (Product $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'slug' => $p->slug,
+                'price' => $p->price,
+                'is_active' => $p->is_active,
+                'cover' => optional($p->images->first())->url,
+                'image_count' => $p->images->count(),
+            ]);
 
         return Inertia::render('admin/products/Index', [
             'products' => $products,
@@ -31,11 +41,15 @@ class ProductController extends Controller
 
     public function store(ProductRequest $request): RedirectResponse
     {
-        $data = $request->validated();
-        $data['slug'] = $this->uniqueSlug($data['name']);
-        $data['image_path'] = $request->file('image')->store('products', 'public');
+        $product = Product::create([
+            'name' => $request->validated('name'),
+            'slug' => $this->uniqueSlug($request->validated('name')),
+            'description' => $request->validated('description'),
+            'price' => $request->validated('price'),
+            'is_active' => $request->validated('is_active'),
+        ]);
 
-        Product::create($data);
+        $this->addImages($product, $request);
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Producto creado.');
@@ -43,27 +57,46 @@ class ProductController extends Controller
 
     public function edit(Product $product): Response
     {
+        $product->load('images:id,product_id,path,position');
+
         return Inertia::render('admin/products/Edit', [
-            'product' => $product->only(['id', 'name', 'slug', 'description', 'price', 'image_url', 'is_active']),
+            'product' => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'description' => $product->description,
+                'price' => $product->price,
+                'is_active' => $product->is_active,
+                'images' => $product->images->map(fn ($img) => ['id' => $img->id, 'url' => $img->url])->all(),
+            ],
         ]);
     }
 
     public function update(ProductRequest $request, Product $product): RedirectResponse
     {
-        $data = $request->validated();
+        $product->update([
+            'name' => $request->validated('name'),
+            'slug' => $request->validated('name') !== $product->name
+                ? $this->uniqueSlug($request->validated('name'), $product->id)
+                : $product->slug,
+            'description' => $request->validated('description'),
+            'price' => $request->validated('price'),
+            'is_active' => $request->validated('is_active'),
+        ]);
 
-        if ($data['name'] !== $product->name) {
-            $data['slug'] = $this->uniqueSlug($data['name'], $product->id);
+        // Delete images the user removed in the editor.
+        $removedIds = collect($request->input('removed_image_ids', []))->map('intval');
+
+        if ($removedIds->isNotEmpty()) {
+            $product->images()->whereIn('id', $removedIds)->get()
+                ->each(function ($image) {
+                    Storage::disk('public')->delete($image->path);
+                    $image->delete();
+                });
         }
 
-        if ($request->hasFile('image')) {
-            Storage::disk('public')->delete($product->image_path);
-            $data['image_path'] = $request->file('image')->store('products', 'public');
-        } else {
-            unset($data['image']);
-        }
-
-        $product->update($data);
+        $this->addImages($product, $request);
+        $this->resequence($product);
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Producto actualizado.');
@@ -71,11 +104,45 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
-        Storage::disk('public')->delete($product->image_path);
+        $product->load('images');
+        $product->images->each(fn ($img) => Storage::disk('public')->delete($img->path));
         $product->delete();
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Producto eliminado.');
+    }
+
+    /**
+     * Store any uploaded images, appending them after existing ones.
+     */
+    private function addImages(Product $product, ProductRequest $request): void
+    {
+        $files = $request->file('images', []);
+
+        if (empty($files)) {
+            return;
+        }
+
+        // Continue numbering after the last existing image (or from 0 when none).
+        $max = $product->images()->max('position');
+        $position = is_null($max) ? -1 : (int) $max;
+
+        foreach ($files as $file) {
+            $product->images()->create([
+                'path' => $file->store('products', 'public'),
+                'position' => ++$position,
+            ]);
+        }
+    }
+
+    /**
+     * Compact positions to 0..n after removals so ordering stays contiguous.
+     */
+    private function resequence(Product $product): void
+    {
+        $product->images()->get()->values()->each(
+            fn ($image, $i) => $image->update(['position' => $i]),
+        );
     }
 
     /**

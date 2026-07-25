@@ -3,15 +3,15 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import { goBack } from '@/lib/navigation';
-import { formatPrice, storageUrl } from '@/lib/pescadex';
+import { formatPrice } from '@/lib/pescadex';
 
 interface Product {
     id: number;
     name: string;
     slug: string;
-    description: string;
     price: number | string;
-    image_path: string | null;
+    cover: string | null;
+    image_count: number;
     is_active: boolean;
 }
 
@@ -47,9 +47,12 @@ function remove(id: number) {
 
         <div v-if="products.length" class="list">
             <div v-for="p in products" :key="p.id" class="row">
-                <div class="thumb" :class="{ empty: !p.image_path }">
-                    <img v-if="p.image_path" :src="storageUrl(p.image_path) ?? ''" :alt="p.name" class="thumb-img" />
+                <div class="thumb" :class="{ empty: !p.cover }">
+                    <img v-if="p.cover" :src="p.cover" :alt="p.name" class="thumb-img" />
                     <Icon v-else name="package" :size="22" color="var(--text-faint)" />
+                    <span v-if="p.image_count > 1" class="count">
+                        <Icon name="image" :size="11" /> {{ p.image_count }}
+                    </span>
                 </div>
                 <div class="info">
                     <div class="name-row">
@@ -148,6 +151,7 @@ function remove(id: number) {
     border-radius: 14px;
 }
 .thumb {
+    position: relative;
     width: 52px;
     height: 52px;
     border-radius: 11px;
@@ -162,6 +166,20 @@ function remove(id: number) {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+.count {
+    position: absolute;
+    bottom: 3px;
+    right: 3px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 5px 1px 4px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.62);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
 }
 .info {
     flex: 1;

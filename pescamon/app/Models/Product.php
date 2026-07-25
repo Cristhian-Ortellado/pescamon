@@ -3,10 +3,9 @@
 namespace App\Models;
 
 use Database\Factories\ProductFactory;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -14,7 +13,6 @@ use Illuminate\Support\Facades\Storage;
  * @property string $slug
  * @property string $description
  * @property string $price
- * @property string|null $image_path
  * @property bool $is_active
  */
 class Product extends Model
@@ -27,16 +25,8 @@ class Product extends Model
         'slug',
         'description',
         'price',
-        'image_path',
         'is_active',
     ];
-
-    /**
-     * Ready-to-use image URL exposed to the frontend (null when none set).
-     *
-     * @var list<string>
-     */
-    protected $appends = ['image_url'];
 
     protected function casts(): array
     {
@@ -46,13 +36,10 @@ class Product extends Model
         ];
     }
 
-    protected function imageUrl(): Attribute
+    /** Gallery images, ordered for display (first = cover). */
+    public function images(): HasMany
     {
-        return Attribute::get(
-            fn (): ?string => $this->image_path
-                ? Storage::disk('public')->url($this->image_path)
-                : null,
-        );
+        return $this->hasMany(ProductImage::class)->orderBy('position')->orderBy('id');
     }
 
     public function getRouteKeyName(): string

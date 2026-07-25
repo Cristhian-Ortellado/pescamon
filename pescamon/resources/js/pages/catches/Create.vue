@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { goBack as back } from '@/lib/navigation';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import RarityBadge from '@/components/pescadex/RarityBadge.vue';
 
@@ -34,6 +34,16 @@ const form = useForm({
 const imagePreview = ref<string | null>(null);
 const gpsState = ref<'idle' | 'detecting' | 'done'>('idle');
 
+const mapEl = ref<HTMLElement | null>(null);
+
+// Leaflet is loaded lazily (ships no types → typed as any).
+
+let leaflet: any = null;
+
+let locMap: any = null;
+
+let locMarker: any = null;
+
 const methods = [
     { value: 'spinning', label: 'Spinning' },
     { value: 'fly', label: 'Mosca' },
@@ -62,6 +72,77 @@ return;
     imagePreview.value = URL.createObjectURL(file);
 }
 
+function locationIcon() {
+    return leaflet.divIcon({
+        html: '<span style="display:block;width:22px;height:22px;border-radius:50% 50% 50% 2px;transform:rotate(45deg);background:var(--accent-pdx,#f5a524);border:2.5px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.4)"></span>',
+        className: '',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+    });
+}
+
+// Place/move the marker and sync the form coordinates.
+function setMarker(lat: number, lng: number, recenter = false) {
+    form.latitude = lat.toFixed(7);
+    form.longitude = lng.toFixed(7);
+
+    if (!locMap || !leaflet) {
+        return;
+    }
+
+    if (!locMarker) {
+        locMarker = leaflet
+            .marker([lat, lng], { draggable: true, icon: locationIcon() })
+            .addTo(locMap);
+        locMarker.on('dragend', () => {
+            const p = locMarker.getLatLng();
+            form.latitude = p.lat.toFixed(7);
+            form.longitude = p.lng.toFixed(7);
+        });
+    } else {
+        locMarker.setLatLng([lat, lng]);
+    }
+
+    if (recenter) {
+        locMap.setView([lat, lng], Math.max(locMap.getZoom(), 13), { animate: true });
+    }
+}
+
+onMounted(async () => {
+    if (!mapEl.value) {
+        return;
+    }
+
+    leaflet = await import('leaflet');
+    await import('leaflet/dist/leaflet.css');
+
+    const hasCoords = form.latitude !== '' && form.longitude !== '';
+    const center: [number, number] = hasCoords
+        ? [Number(form.latitude), Number(form.longitude)]
+        : [-25.3, -57.6]; // Paraguay (Asunción) as a sensible default.
+
+    locMap = leaflet
+        .map(mapEl.value, { zoomControl: true, scrollWheelZoom: false })
+        .setView(center, hasCoords ? 13 : 6);
+
+    leaflet
+        .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 18,
+        })
+        .addTo(locMap);
+
+    if (hasCoords) {
+        setMarker(Number(form.latitude), Number(form.longitude), false);
+    }
+
+    // Tap the map to drop / move the catch marker.
+    locMap.on('click', (e: any) => setMarker(e.latlng.lat, e.latlng.lng, false));
+
+    // The map mounts inside a scrollable form; ensure it measures correctly.
+    setTimeout(() => locMap?.invalidateSize(), 0);
+});
+
 function detectGps() {
     if (!navigator.geolocation) {
 return;
@@ -70,8 +151,7 @@ return;
     gpsState.value = 'detecting';
     navigator.geolocation.getCurrentPosition(
         (pos) => {
-            form.latitude = pos.coords.latitude.toFixed(7);
-            form.longitude = pos.coords.longitude.toFixed(7);
+            setMarker(pos.coords.latitude, pos.coords.longitude, true);
             gpsState.value = 'done';
         },
         () => {
@@ -165,6 +245,7 @@ function save() {
         <!-- ubicación -->
         <div class="field">
             <div class="label">Ubicación</div>
+            <p class="sub-hint">Este nombre se utilizará en el mapa para buscar las capturas.</p>
             <input v-model="form.location_name" type="text" class="text-input" placeholder="Ej. Embalse del Atazar" />
             <button type="button" class="gps" :class="{ on: gpsState === 'done' }" @click="detectGps">
                 <Icon name="locate-fixed" :size="14" :color="gpsState === 'done' ? 'var(--teal)' : 'var(--text-faint)'" />
@@ -172,6 +253,16 @@ function save() {
                 <span v-else-if="gpsState === 'detecting'">Detectando…</span>
                 <span v-else>Ubicación detectada ✓</span>
             </button>
+
+            <div ref="mapEl" class="loc-map" />
+            <p class="map-help">
+                <Icon name="map-pin" :size="13" color="var(--text-faint)" />
+                Toca el mapa para marcar el punto exacto de tu captura.
+            </p>
+            <p v-if="form.latitude && form.longitude" class="coords">
+                <Icon name="locate-fixed" :size="13" color="var(--teal)" />
+                {{ Number(form.latitude).toFixed(5) }}, {{ Number(form.longitude).toFixed(5) }}
+            </p>
         </div>
 
         <!-- método -->
@@ -389,6 +480,15 @@ function save() {
     outline: none;
     resize: vertical;
 }
+.sub-hint {
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-muted);
+    margin: -3px 0 8px;
+    line-height: 1.4;
+}
 .gps {
     display: flex;
     align-items: center;
@@ -401,6 +501,36 @@ function save() {
     border: 0;
 }
 .gps.on {
+    color: var(--teal);
+}
+.loc-map {
+    height: 190px;
+    margin-top: 10px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--field-border);
+    background: var(--surface-locked);
+    z-index: 0;
+}
+.loc-map :deep(.leaflet-container) {
+    background: var(--surface-locked);
+    font-family: inherit;
+}
+.map-help {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 7px;
+    font-size: 11.5px;
+    color: var(--text-faint);
+}
+.coords {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 5px;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--teal);
 }
 .chips {

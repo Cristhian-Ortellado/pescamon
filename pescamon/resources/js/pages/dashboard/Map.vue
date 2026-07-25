@@ -56,6 +56,7 @@ function escapeHtml(value: string): string {
 // Striped placeholder gradient matching FishPhoto, keyed by rarity.
 function photoGradient(rarity: string): string {
     const [a, b] = rarityMeta(rarity).photo;
+
     return `repeating-linear-gradient(135deg, ${a}, ${a} 7px, ${b} 7px, ${b} 14px)`;
 }
 

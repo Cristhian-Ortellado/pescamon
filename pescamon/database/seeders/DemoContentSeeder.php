@@ -105,7 +105,7 @@ class DemoContentSeeder extends Seeder
                 'status' => 'verified',
                 'xp_earned' => 0,
                 'is_personal_best' => false,
-                'image_path' => 'catches/S5h4WRxpS8ywYEThAcOkEVaHTkcqeyBRqYmqmccv.png',
+                'image_path' => 'catches/ibaIGF9l3By2wYLRIw56eb52TdaBXDFZes8kY7Bx.png',
             ]);
 
             $reward = $leveling->calculateCatchReward($user, $catch);

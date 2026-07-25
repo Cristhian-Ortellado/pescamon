@@ -8,7 +8,6 @@ const page = usePage();
 const tabs = [
     { href: '/dashboard', label: 'Mapa', icon: 'map' },
     { href: '/feed', label: 'Feed', icon: 'newspaper' },
-    { href: '/leaderboard', label: 'Rankings', icon: 'trophy' },
     { href: '/profile', label: 'Perfil', icon: 'user' },
 ];
 

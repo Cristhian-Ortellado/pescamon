@@ -125,6 +125,15 @@ function toggleFollow() {
                 <Icon name="chevron-right" :size="18" color="var(--text-faint)" />
             </Link>
 
+            <Link href="/leaderboard" class="achievements-link">
+                <div class="al-icon rank"><Icon name="trophy" :size="19" color="var(--teal)" /></div>
+                <div class="al-text">
+                    <div class="al-title">Rankings</div>
+                    <div class="al-sub">Tabla de clasificación de pescadores</div>
+                </div>
+                <Icon name="chevron-right" :size="18" color="var(--text-faint)" />
+            </Link>
+
             <div class="pdx-head">
                 <div class="pdx-title">Mi Pokédex</div>
                 <div class="pdx-tabs">
@@ -375,6 +384,9 @@ function toggleFollow() {
     align-items: center;
     justify-content: center;
     flex: none;
+}
+.al-icon.rank {
+    background: rgba(45, 212, 191, 0.16);
 }
 .al-text {
     flex: 1;

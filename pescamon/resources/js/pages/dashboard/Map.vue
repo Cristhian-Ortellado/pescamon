@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { onClickOutside } from '@vueuse/core';
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import FishPhoto from '@/components/pescadex/FishPhoto.vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import RarityBadge from '@/components/pescadex/RarityBadge.vue';
@@ -19,8 +19,7 @@ interface MapCatch {
     user: { id: number; name: string; avatar: string | null };
 }
 
-const props = defineProps<{
-    mapCatches: MapCatch[];
+defineProps<{
     userLevel: number;
     userXp: number;
 }>();
@@ -28,14 +27,19 @@ const props = defineProps<{
 const mapContainer = ref<HTMLElement | null>(null);
 const query = ref('');
 const locating = ref(false);
+const loadingData = ref(false);
 
-// Catches matching the search box (species name, zone or angler). Empty query
-// shows everything.
+// Catches currently loaded for the visible map viewport. Refilled by
+// fetchViewport() as the user pans/zooms — not shipped with the page.
+const loaded = ref<MapCatch[]>([]);
+
+// Catches matching the search box (species name, zone or angler), scoped to
+// what is loaded for the current viewport. Empty query shows everything loaded.
 const filteredCatches = computed(() => {
     const q = query.value.trim().toLowerCase();
     const speciesId = selectedSpeciesId.value;
 
-    return props.mapCatches.filter((c) => {
+    return loaded.value.filter((c) => {
         if (speciesId !== null && c.species.id !== speciesId) {
             return false;
         }
@@ -63,9 +67,10 @@ let mapInstance: any = null;
 
 let userMarker: any = null;
 
-// Catch id → marker, so search can toggle each marker's visibility.
+// Catch id → marker, so the viewport sync and search can reuse / toggle each
+// marker without recreating it on overlapping pans.
 
-const markers: { c: MapCatch; marker: any }[] = [];
+const markerStore = new Map<number, { c: MapCatch; marker: any }>();
 
 const rarityColor: Record<string, string> = {
     common: '#64748b',
@@ -80,7 +85,7 @@ const selectedSpeciesId = ref<number | null>(null);
 
 const speciesOptions = computed(() => {
     const seen = new Map<number, { id: number; name: string; rarity: string }>();
-    props.mapCatches.forEach((c) => {
+    loaded.value.forEach((c) => {
         if (!seen.has(c.species.id)) {
             seen.set(c.species.id, {
                 id: c.species.id,
@@ -215,6 +220,118 @@ function locateUser(recenter = true) {
     );
 }
 
+// Build a single catch marker (teardrop pin coloured by rarity, lazy popup).
+function createMarker(c: MapCatch) {
+    const color = rarityColor[c.species.rarity] ?? '#64748b';
+    const icon = leaflet.divIcon({
+        html: `<span style="display:block;width:20px;height:20px;border-radius:50% 50% 50% 2px;transform:rotate(45deg);background:${color};border:2.5px solid #eaf6ff;box-shadow:0 6px 14px rgba(0,0,0,.4)"></span>`,
+        className: '',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+    });
+    const marker = leaflet.marker([c.latitude, c.longitude], { icon });
+    // Show a small info popup (user + catch) instead of navigating away.
+    // The content is built lazily the first time the marker is opened.
+    marker.bindPopup(() => buildPopup(c), {
+        closeButton: true,
+        minWidth: 210,
+        maxWidth: 230,
+        className: 'map-pop-wrap',
+    });
+
+    return marker;
+}
+
+// Show/hide markers already on the map according to the active search and
+// species filter (does not touch the viewport-loaded set).
+function applyFilter() {
+    if (!mapInstance) {
+        return;
+    }
+
+    const visibleIds = new Set(filteredCatches.value.map((c) => c.id));
+    markerStore.forEach(({ marker }, id) => {
+        const shouldShow = visibleIds.has(id);
+        const onMap = mapInstance.hasLayer(marker);
+
+        if (shouldShow && !onMap) {
+            marker.addTo(mapInstance);
+        } else if (!shouldShow && onMap) {
+            mapInstance.removeLayer(marker);
+        }
+    });
+}
+
+// Reconcile the marker set with the catches returned for the current viewport:
+// drop markers that fell out of the response, create the newcomers, reuse the
+// rest. Keeps memory bounded to roughly what is on screen.
+function syncMarkers(list: MapCatch[]) {
+    loaded.value = list;
+    const ids = new Set(list.map((c) => c.id));
+
+    markerStore.forEach(({ marker }, id) => {
+        if (!ids.has(id)) {
+            mapInstance.removeLayer(marker);
+            markerStore.delete(id);
+        }
+    });
+
+    list.forEach((c) => {
+        if (!markerStore.has(c.id)) {
+            markerStore.set(c.id, { c, marker: createMarker(c) });
+        }
+    });
+
+    applyFilter();
+}
+
+// Fetch the catches inside the current map bounds. In-flight requests are
+// aborted so only the latest viewport wins.
+let fetchAbort: AbortController | null = null;
+let fetchTimer: ReturnType<typeof setTimeout> | undefined;
+
+async function fetchViewport() {
+    if (!mapInstance) {
+        return;
+    }
+
+    const b = mapInstance.getBounds();
+    const params = new URLSearchParams({
+        north: b.getNorth().toFixed(6),
+        south: b.getSouth().toFixed(6),
+        east: b.getEast().toFixed(6),
+        west: b.getWest().toFixed(6),
+    });
+
+    fetchAbort?.abort();
+    fetchAbort = new AbortController();
+    loadingData.value = true;
+
+    try {
+        const res = await fetch(`/map/catches?${params.toString()}`, {
+            headers: { Accept: 'application/json' },
+            signal: fetchAbort.signal,
+        });
+
+        if (!res.ok) {
+            return;
+        }
+
+        const data = await res.json();
+        syncMarkers(data.catches as MapCatch[]);
+    } catch {
+        // Aborted (superseded request) or network error → keep current markers.
+    } finally {
+        loadingData.value = false;
+    }
+}
+
+// Debounce viewport fetches so a pan/zoom gesture triggers a single request.
+function scheduleFetch() {
+    clearTimeout(fetchTimer);
+    fetchTimer = setTimeout(fetchViewport, 300);
+}
+
 onMounted(async () => {
     if (!mapContainer.value) {
         return;
@@ -234,72 +351,24 @@ onMounted(async () => {
         })
         .addTo(mapInstance);
 
-    const points: [number, number][] = [];
+    // Refetch markers whenever the visible area settles after a pan/zoom.
+    mapInstance.on('moveend', scheduleFetch);
 
-    props.mapCatches.forEach((c) => {
-        const color = rarityColor[c.species.rarity] ?? '#64748b';
-        const icon = leaflet.divIcon({
-            html: `<span style="display:block;width:20px;height:20px;border-radius:50% 50% 50% 2px;transform:rotate(45deg);background:${color};border:2.5px solid #eaf6ff;box-shadow:0 6px 14px rgba(0,0,0,.4)"></span>`,
-            className: '',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10],
-        });
-        const marker = leaflet
-            .marker([c.latitude, c.longitude], { icon })
-            .addTo(mapInstance);
-        // Show a small info popup (user + catch) instead of navigating away.
-        // The content is built lazily the first time the marker is opened.
-        marker.bindPopup(() => buildPopup(c), {
-            closeButton: true,
-            minWidth: 210,
-            maxWidth: 230,
-            className: 'map-pop-wrap',
-        });
-        markers.push({ c, marker });
-        points.push([c.latitude, c.longitude]);
-    });
-
-    // Fallback framing until (and unless) geolocation resolves below.
-    if (points.length) {
-        mapInstance.fitBounds(points as [number, number][], {
-            padding: [60, 60],
-            maxZoom: 9,
-        });
-    }
-
-    // Default: center on the authenticated user's current location.
+    // Initial load for the default view, then center on the user's location
+    // (which pans the map and triggers another debounced fetch for that area).
+    fetchViewport();
     locateUser(true);
 });
 
-// Live search: toggle marker visibility and frame the matches on the map.
-watch(filteredCatches, (list) => {
-    if (!mapInstance) {
-        return;
-    }
-
-    const visibleIds = new Set(list.map((c) => c.id));
-    const visiblePoints: [number, number][] = [];
-
-    markers.forEach(({ c, marker }) => {
-        if (visibleIds.has(c.id)) {
-            if (!mapInstance.hasLayer(marker)) {
-                marker.addTo(mapInstance);
-            }
-
-            visiblePoints.push([c.latitude, c.longitude]);
-        } else if (mapInstance.hasLayer(marker)) {
-            mapInstance.removeLayer(marker);
-        }
-    });
-
-    // Frame the results only while a search or species filter is active.
-    if ((query.value.trim() || selectedSpeciesId.value !== null) && visiblePoints.length) {
-        mapInstance.fitBounds(visiblePoints, {
-            padding: [60, 60],
-            maxZoom: 13,
-        });
-    }
+onUnmounted(() => {
+    clearTimeout(fetchTimer);
+    fetchAbort?.abort();
+    mapInstance?.remove();
 });
+
+// Live search / species filter: toggle visibility of the loaded markers.
+// No reframing — with viewport loading the matches are already on screen.
+watch(filteredCatches, applyFilter);
 </script>
 
 <template>
@@ -402,7 +471,13 @@ watch(filteredCatches, (list) => {
         </Link>
         <div v-else class="peek empty">
             <Icon name="map-pin" :size="20" color="var(--text-faint)" />
-            <span>Aún no hay capturas en el mapa. ¡Registra la primera!</span>
+            <span>No hay capturas en esta zona. Mueve o aleja el mapa para ver más.</span>
+        </div>
+
+        <!-- viewport loading indicator -->
+        <div v-if="loadingData" class="loading-pill">
+            <span class="spinner" />
+            Cargando capturas…
         </div>
 
         <!-- locate button -->
@@ -629,6 +704,38 @@ watch(filteredCatches, (list) => {
     font-size: 11.5px;
     color: var(--text-faint);
     margin-top: 2px;
+}
+.loading-pill {
+    position: absolute;
+    top: 118px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 13;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    background: var(--glass-strong);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 600;
+}
+.loading-pill .spinner {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 2px solid var(--glass-border);
+    border-top-color: var(--teal);
+    animation: map-spin 0.7s linear infinite;
+}
+@keyframes map-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 .locate-btn {
     position: absolute;

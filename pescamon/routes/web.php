@@ -8,6 +8,7 @@ use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\LikeController;
+use App\Http\Controllers\MapController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SpeciesController;
@@ -18,6 +19,9 @@ Route::inertia('/', 'Welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    // Map markers loaded lazily by the visible bounding box (see MapController).
+    Route::get('/map/catches', [MapController::class, 'catches'])->name('map.catches');
 
     Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
 

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import PasskeyVerify from '@/components/PasskeyVerify.vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
@@ -37,14 +36,6 @@ const showPassword = ref(false);
                 </div>
 
                 <p v-if="status" class="status-msg">{{ status }}</p>
-
-                <div class="passkey-wrap">
-                    <PasskeyVerify
-                        label="Iniciar sesión con passkey"
-                        loading-label="Verificando..."
-                        separator="O continúa con tu correo"
-                    />
-                </div>
 
                 <Form
                     v-bind="store.form()"

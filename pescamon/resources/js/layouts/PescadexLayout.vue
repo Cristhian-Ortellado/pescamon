@@ -13,10 +13,11 @@ interface AuthUser {
     email: string;
     level: number;
     avatar: string | null;
+    is_superadmin: boolean;
 }
 
 const page = usePage();
-const user = computed(() => (page.props.auth as { user: AuthUser }).user);
+const user = computed(() => (page.props.auth as unknown as { user: AuthUser }).user);
 const handle = computed(
     () => '@' + (user.value?.email?.split('@')[0] ?? 'pescador'),
 );
@@ -31,8 +32,11 @@ const nav = [
     { href: '/dashboard', label: 'Mapa', icon: 'map' },
     { href: '/feed', label: 'Feed', icon: 'newspaper' },
     { href: '/leaderboard', label: 'Rankings', icon: 'trophy' },
+    { href: '/tienda', label: 'Tienda', icon: 'store' },
     { href: '/profile', label: 'Perfil', icon: 'user' },
 ];
+
+const isSuperadmin = computed(() => user.value?.is_superadmin ?? false);
 
 const current = computed(() => page.url.split('?')[0]);
 function isActive(href: string) {
@@ -76,6 +80,15 @@ function isActive(href: string) {
                 >
                     <Icon name="bell" :size="20" />
                     <span>Notificaciones</span>
+                </Link>
+                <Link
+                    v-if="isSuperadmin"
+                    href="/admin/products"
+                    class="nav-item"
+                    :class="{ active: isActive('/admin/products') }"
+                >
+                    <Icon name="package" :size="20" />
+                    <span>Administrar tienda</span>
                 </Link>
             </nav>
 

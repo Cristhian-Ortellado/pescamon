@@ -30,6 +30,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property int $xp
  * @property string $location_privacy
  * @property string $unit_preference
+ * @property bool $is_superadmin
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -37,7 +38,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'avatar_path', 'password', 'level', 'xp', 'location_privacy', 'unit_preference'])]
+#[Fillable(['name', 'email', 'avatar_path', 'password', 'level', 'xp', 'location_privacy', 'unit_preference', 'is_superadmin'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -60,6 +61,7 @@ class User extends Authenticatable implements PasskeyUser
             'two_factor_confirmed_at' => 'datetime',
             'level' => 'integer',
             'xp' => 'integer',
+            'is_superadmin' => 'boolean',
         ];
     }
 

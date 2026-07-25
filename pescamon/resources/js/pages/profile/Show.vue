@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import SpeciesCard from '@/components/pescadex/SpeciesCard.vue';
@@ -36,6 +36,11 @@ const props = defineProps<{
     levelProgress: number;
     xpForNextLevel: number;
 }>();
+
+const page = usePage();
+const isSuperadmin = computed(
+    () => (page.props.auth as { user?: { is_superadmin?: boolean } })?.user?.is_superadmin ?? false,
+);
 
 const handle = computed(() => '@' + props.profileUser.name.toLowerCase().replace(/\s+/g, ''));
 const isEmpty = computed(() => props.profileUser.is_own_profile && props.stats.species_caught === 0);
@@ -130,6 +135,15 @@ function toggleFollow() {
                 <div class="al-text">
                     <div class="al-title">Rankings</div>
                     <div class="al-sub">Tabla de clasificación de pescadores</div>
+                </div>
+                <Icon name="chevron-right" :size="18" color="var(--text-faint)" />
+            </Link>
+
+            <Link v-if="isSuperadmin" href="/admin/products" class="achievements-link">
+                <div class="al-icon admin"><Icon name="package" :size="19" color="var(--accent-pdx)" /></div>
+                <div class="al-text">
+                    <div class="al-title">Administrar tienda</div>
+                    <div class="al-sub">Gestionar productos de la tienda</div>
                 </div>
                 <Icon name="chevron-right" :size="18" color="var(--text-faint)" />
             </Link>

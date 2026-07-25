@@ -18,10 +18,12 @@ class DatabaseSeeder extends Seeder
         // Reference data first: catches and achievements depend on it.
         (new SpeciesSeeder)->run();
         (new AchievementSeeder)->run();
+        (new ProductSeeder)->run();
 
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'is_superadmin' => true,
         ]);
 
         // Multiple demo anglers, each with catches, follows, likes and comments.

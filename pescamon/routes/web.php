@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AchievementController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\CatchController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DashboardController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\LikeController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ShopController;
 use App\Http\Controllers\SpeciesController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +40,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/catches/{catch}/comments', [CommentController::class, 'store'])->name('catches.comments.store');
 
     Route::get('/species/{species:slug}', [SpeciesController::class, 'show'])->name('species.show');
+
+    // Storefront (public to any authenticated user).
+    Route::get('/tienda', [ShopController::class, 'index'])->name('shop.index');
+    Route::get('/tienda/{product:slug}', [ShopController::class, 'show'])->name('shop.show');
+
+    // Product administration — restricted to the superadmin.
+    Route::middleware('superadmin')->prefix('admin')->name('admin.')->group(function () {
+        Route::resource('products', AdminProductController::class)->except('show');
+    });
 
     Route::get('/leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
 

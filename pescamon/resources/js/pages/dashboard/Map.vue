@@ -22,6 +22,16 @@ const props = defineProps<{
 
 const mapContainer = ref<HTMLElement | null>(null);
 const peek = computed(() => props.mapCatches[0] ?? null);
+const locating = ref(false);
+
+// Leaflet is loaded lazily; keep the references so the locate button can reuse
+// the same map instance after mount. (leaflet ships no types → typed as any.)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let leaflet: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let mapInstance: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let userMarker: any = null;
 
 const rarityColor: Record<string, string> = {
     common: '#64748b',
@@ -32,37 +42,80 @@ const rarityColor: Record<string, string> = {
 
 const filters = ['Especie', 'Peso mín', 'Método'];
 
+function userLocationIcon() {
+    return leaflet.divIcon({
+        html: '<span style="display:block;width:16px;height:16px;border-radius:50%;background:#2d9bf0;border:3px solid #fff;box-shadow:0 0 0 5px rgba(45,155,240,.25)"></span>',
+        className: '',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+    });
+}
+
+// Center the map on the user's current (browser) location and drop a marker.
+// Silently keeps the current view if permission is denied or unavailable.
+function locateUser(recenter = true) {
+    if (!mapInstance || !leaflet || !('geolocation' in navigator)) return;
+
+    locating.value = true;
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            const latlng: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+
+            if (!userMarker) {
+                userMarker = leaflet
+                    .marker(latlng, { icon: userLocationIcon(), zIndexOffset: 1000 })
+                    .addTo(mapInstance);
+            } else {
+                userMarker.setLatLng(latlng);
+            }
+
+            if (recenter) {
+                mapInstance.setView(latlng, 14, { animate: true });
+            }
+            locating.value = false;
+        },
+        () => {
+            locating.value = false;
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
+    );
+}
+
 onMounted(async () => {
     if (!mapContainer.value) return;
 
-    const L = await import('leaflet');
+    leaflet = await import('leaflet');
     await import('leaflet/dist/leaflet.css');
 
-    const map = L.map(mapContainer.value, { zoomControl: false }).setView([40.4, -3.7], 5);
+    mapInstance = leaflet.map(mapContainer.value, { zoomControl: false }).setView([40.4, -3.7], 5);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap',
         maxZoom: 18,
-    }).addTo(map);
+    }).addTo(mapInstance);
 
     const points: [number, number][] = [];
 
     props.mapCatches.forEach((c) => {
         const color = rarityColor[c.species.rarity] ?? '#64748b';
-        const icon = L.divIcon({
+        const icon = leaflet.divIcon({
             html: `<span style="display:block;width:20px;height:20px;border-radius:50% 50% 50% 2px;transform:rotate(45deg);background:${color};border:2.5px solid #eaf6ff;box-shadow:0 6px 14px rgba(0,0,0,.4)"></span>`,
             className: '',
             iconSize: [20, 20],
             iconAnchor: [10, 10],
         });
-        const marker = L.marker([c.latitude, c.longitude], { icon }).addTo(map);
+        const marker = leaflet.marker([c.latitude, c.longitude], { icon }).addTo(mapInstance);
         marker.on('click', () => router.visit(`/catches/${c.id}`));
         points.push([c.latitude, c.longitude]);
     });
 
+    // Fallback framing until (and unless) geolocation resolves below.
     if (points.length) {
-        map.fitBounds(points as [number, number][], { padding: [60, 60], maxZoom: 9 });
+        mapInstance.fitBounds(points as [number, number][], { padding: [60, 60], maxZoom: 9 });
     }
+
+    // Default: center on the authenticated user's current location.
+    locateUser(true);
 });
 </script>
 
@@ -102,6 +155,16 @@ onMounted(async () => {
             <Icon name="map-pin" :size="20" color="var(--text-faint)" />
             <span>Aún no hay capturas en el mapa. ¡Registra la primera!</span>
         </div>
+
+        <!-- locate button -->
+        <button
+            class="locate-btn"
+            :class="{ active: locating }"
+            aria-label="Centrar en mi ubicación"
+            @click="locateUser(true)"
+        >
+            <Icon name="locate-fixed" :size="21" :color="locating ? 'var(--text-faint)' : 'var(--teal)'" />
+        </button>
 
         <!-- FAB -->
         <Link href="/catches/create" class="fab">
@@ -226,6 +289,26 @@ onMounted(async () => {
     color: var(--text-faint);
     margin-top: 2px;
 }
+.locate-btn {
+    position: absolute;
+    right: 16px;
+    bottom: 224px;
+    z-index: 16;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-strong);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+}
+.locate-btn.active {
+    opacity: 0.7;
+}
 .fab {
     position: absolute;
     right: 16px;
@@ -250,6 +333,9 @@ onMounted(async () => {
     }
     .fab {
         bottom: 90px;
+    }
+    .locate-btn {
+        bottom: 154px;
     }
 }
 </style>

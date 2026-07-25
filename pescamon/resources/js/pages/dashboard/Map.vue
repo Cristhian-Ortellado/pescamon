@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, onMounted, computed } from 'vue';
+import FishPhoto from '@/components/pescadex/FishPhoto.vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import RarityBadge from '@/components/pescadex/RarityBadge.vue';
-import FishPhoto from '@/components/pescadex/FishPhoto.vue';
-import { rarityMeta, timeAgo } from '@/lib/pescadex';
+import { rarityMeta, storageUrl, timeAgo } from '@/lib/pescadex';
 
 interface MapCatch {
     id: number;
     species: { id: number; name: string; slug: string; rarity: string };
+    weight_kg: number;
+    image_path: string | null;
     caught_at: string;
     latitude: number;
     longitude: number;
+    user: { id: number; name: string; avatar: string | null };
 }
 
 const props = defineProps<{
@@ -26,11 +29,11 @@ const locating = ref(false);
 
 // Leaflet is loaded lazily; keep the references so the locate button can reuse
 // the same map instance after mount. (leaflet ships no types → typed as any.)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 let leaflet: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 let mapInstance: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 let userMarker: any = null;
 
 const rarityColor: Record<string, string> = {
@@ -41,6 +44,59 @@ const rarityColor: Record<string, string> = {
 };
 
 const filters = ['Especie', 'Peso mín', 'Método'];
+
+function escapeHtml(value: string): string {
+    return value.replace(
+        /[&<>"']/g,
+        (ch) =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch] as string,
+    );
+}
+
+// Striped placeholder gradient matching FishPhoto, keyed by rarity.
+function photoGradient(rarity: string): string {
+    const [a, b] = rarityMeta(rarity).photo;
+    return `repeating-linear-gradient(135deg, ${a}, ${a} 7px, ${b} 7px, ${b} 14px)`;
+}
+
+// Builds the Leaflet popup content shown when a catch marker is clicked:
+// a small card with the fish photo, species/weight and the angler.
+function buildPopup(c: MapCatch): HTMLElement {
+    const meta = rarityMeta(c.species.rarity);
+    const photo = storageUrl(c.image_path);
+    const mediaStyle = photo
+        ? `background-image:url('${photo}')`
+        : `background:${photoGradient(c.species.rarity)}`;
+    const avatarStyle = c.user.avatar
+        ? `background-image:url('${c.user.avatar}')`
+        : 'background:repeating-linear-gradient(135deg,var(--avatar-a),var(--avatar-a) 4px,var(--avatar-b) 4px,var(--avatar-b) 8px)';
+
+    const el = document.createElement('div');
+    el.className = 'map-pop';
+    el.innerHTML = `
+        <div class="mp-media" style="${mediaStyle}"></div>
+        <div class="mp-body">
+            <div class="mp-row">
+                <span class="mp-name">${escapeHtml(c.species.name)}</span>
+                <span class="mp-rarity" style="color:${meta.color};border-color:${meta.color}">${meta.short}</span>
+            </div>
+            <div class="mp-weight">${c.weight_kg} kg</div>
+            <div class="mp-user">
+                <span class="mp-avatar" style="${avatarStyle}"></span>
+                <span class="mp-uname">${escapeHtml(c.user.name)}</span>
+                <span class="mp-time">· ${timeAgo(c.caught_at)}</span>
+            </div>
+            <a class="mp-link" href="/catches/${c.id}">Ver captura →</a>
+        </div>`;
+
+    // Keep navigation inside the SPA instead of a full page reload.
+    el.querySelector('.mp-link')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        router.visit(`/catches/${c.id}`);
+    });
+
+    return el;
+}
 
 function userLocationIcon() {
     return leaflet.divIcon({
@@ -54,7 +110,9 @@ function userLocationIcon() {
 // Center the map on the user's current (browser) location and drop a marker.
 // Silently keeps the current view if permission is denied or unavailable.
 function locateUser(recenter = true) {
-    if (!mapInstance || !leaflet || !('geolocation' in navigator)) return;
+    if (!mapInstance || !leaflet || !('geolocation' in navigator)) {
+return;
+}
 
     locating.value = true;
     navigator.geolocation.getCurrentPosition(
@@ -72,6 +130,7 @@ function locateUser(recenter = true) {
             if (recenter) {
                 mapInstance.setView(latlng, 14, { animate: true });
             }
+
             locating.value = false;
         },
         () => {
@@ -82,7 +141,9 @@ function locateUser(recenter = true) {
 }
 
 onMounted(async () => {
-    if (!mapContainer.value) return;
+    if (!mapContainer.value) {
+return;
+}
 
     leaflet = await import('leaflet');
     await import('leaflet/dist/leaflet.css');
@@ -105,7 +166,14 @@ onMounted(async () => {
             iconAnchor: [10, 10],
         });
         const marker = leaflet.marker([c.latitude, c.longitude], { icon }).addTo(mapInstance);
-        marker.on('click', () => router.visit(`/catches/${c.id}`));
+        // Show a small info popup (user + catch) instead of navigating away.
+        // The content is built lazily the first time the marker is opened.
+        marker.bindPopup(() => buildPopup(c), {
+            closeButton: true,
+            minWidth: 210,
+            maxWidth: 230,
+            className: 'map-pop-wrap',
+        });
         points.push([c.latitude, c.longitude]);
     });
 
@@ -337,5 +405,102 @@ onMounted(async () => {
     .locate-btn {
         bottom: 154px;
     }
+}
+</style>
+
+<!-- Global: Leaflet popups render outside the component's scoped DOM. -->
+<style>
+.map-pop-wrap .leaflet-popup-content-wrapper {
+    background: var(--glass-strong, #0d2331);
+    color: var(--text, #eaf6ff);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+    border-radius: 16px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+    padding: 0;
+    overflow: hidden;
+}
+.map-pop-wrap .leaflet-popup-content {
+    margin: 0;
+    width: 210px !important;
+}
+.map-pop-wrap .leaflet-popup-tip {
+    background: var(--glass-strong, #0d2331);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+}
+.map-pop-wrap a.leaflet-popup-close-button {
+    color: var(--text-faint, #7d97a8);
+    padding: 6px 7px 0 0;
+}
+
+.map-pop {
+    display: flex;
+    flex-direction: column;
+    font-family: inherit;
+}
+.map-pop .mp-media {
+    height: 96px;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+}
+.map-pop .mp-body {
+    padding: 10px 12px 12px;
+}
+.map-pop .mp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.map-pop .mp-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text, #eaf6ff);
+}
+.map-pop .mp-rarity {
+    flex: none;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    border: 1px solid;
+    border-radius: 999px;
+    padding: 1px 7px;
+}
+.map-pop .mp-weight {
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--teal, #2dd4bf);
+    margin-top: 3px;
+}
+.map-pop .mp-user {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 8px;
+}
+.map-pop .mp-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    flex: none;
+    background-size: cover;
+    background-position: center;
+}
+.map-pop .mp-uname {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-soft, #c4d6e2);
+}
+.map-pop .mp-time {
+    font-size: 11px;
+    color: var(--text-faint, #7d97a8);
+}
+.map-pop a.mp-link {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--accent-pdx, #f5a524);
+    text-decoration: none;
 }
 </style>

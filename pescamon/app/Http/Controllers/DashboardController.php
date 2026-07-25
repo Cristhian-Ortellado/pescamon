@@ -17,7 +17,7 @@ class DashboardController extends Controller
         // Privacy rules are applied: approximate → round to 2 decimals + random offset,
         // hidden → exclude from results.
         $mapCatches = FishCatch::query()
-            ->with(['species:id,name,slug,rarity,image_locked_path,image_reference_path', 'user:id,name,location_privacy'])
+            ->with(['species:id,name,slug,rarity,image_locked_path,image_reference_path', 'user:id,name,location_privacy,avatar_path'])
             ->where('status', 'verified')
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
@@ -28,9 +28,16 @@ class DashboardController extends Controller
             ->map(fn (FishCatch $c) => [
                 'id' => $c->id,
                 'species' => $c->species->only(['id', 'name', 'slug', 'rarity']),
+                'weight_kg' => (float) $c->weight_kg,
+                'image_path' => $c->thumbnail_path ?: $c->image_path,
                 'caught_at' => $c->caught_at->toISOString(),
                 'latitude' => $this->applyPrivacy($c->user->location_privacy, (float) $c->latitude, 'lat'),
                 'longitude' => $this->applyPrivacy($c->user->location_privacy, (float) $c->longitude, 'lng'),
+                'user' => [
+                    'id' => $c->user->id,
+                    'name' => $c->user->name,
+                    'avatar' => $c->user->avatar,
+                ],
             ]);
 
         return Inertia::render('dashboard/Map', [

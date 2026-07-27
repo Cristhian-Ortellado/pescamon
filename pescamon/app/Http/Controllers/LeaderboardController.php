@@ -21,30 +21,37 @@ class LeaderboardController extends Controller
             $q->where('status', 'verified')->selectRaw('COUNT(DISTINCT species_id)');
         }]);
 
-        $species = Species::all(['id', 'name', 'scientific_name', 'slug', 'rarity', 'average_weight_kg']);
+        $species = collect();
+        $rankedSpeciesFinal = collect();
+        $selectedSpeciesId = null;
 
-        // Obs.: extremely inefficient. For testing purposes, it's fine just to send something to the front.
-        $rankedBySpecies = FishCatch::query()
-            ->select('user_id', 'species_id')
-            ->selectRaw('SUM(xp_earned) as total_xp')
-            ->where('status', 'verified')
-            ->groupBy('user_id', 'species_id')
-            ->orderByDesc('total_xp')
-            ->with(['user:id,name,avatar_path', 'species:id,name'])
-            ->get();
-        $rankedSpeciesFinal = $rankedBySpecies
-            ->groupBy('species_id')
-            ->flatMap(fn ($rowsForSpecies) => $rowsForSpecies->values()->take(20)->map(fn (FishCatch $row, int $i) => [
-                'rank' => $i + 1,
-                'id' => $row->user_id,
-                'name' => $row->user->name,
-                'avatar' => $row->user->avatar,
-                'species_id' => $row->species_id,
-                'species_name' => $row->species->name,
-                'total_xp' => (int) $row->total_xp,
-                'is_current_user' => $row->user_id === $me->id,
-            ]))
-            ->values();
+        if ($scope === 'species') {
+            $species = Species::all(['id', 'name', 'scientific_name', 'slug', 'rarity', 'average_weight_kg']);
+            $selectedSpeciesId = $request->integer('species_id') ?: $species->first()?->id;
+            $selectedSpeciesName = $species->firstWhere('id', $selectedSpeciesId)?->name;
+
+            $rankedSpeciesFinal = FishCatch::query()
+                ->select('user_id', 'species_id')
+                ->selectRaw('SUM(xp_earned) as total_xp')
+                ->where('status', 'verified')
+                ->where('species_id', $selectedSpeciesId)
+                ->groupBy('user_id', 'species_id')
+                ->orderByDesc('total_xp')
+                ->limit(20)
+                ->with(['user:id,name,avatar_path'])
+                ->get()
+                ->values()
+                ->map(fn (FishCatch $row, int $i) => [
+                    'rank' => $i + 1,
+                    'id' => $row->user_id,
+                    'name' => $row->user->name,
+                    'avatar' => $row->user->avatar,
+                    'species_id' => $row->species_id,
+                    'species_name' => $selectedSpeciesName,
+                    'total_xp' => (int) $row->total_xp,
+                    'is_current_user' => $row->user_id === $me->id,
+                ]);
+        }
 
         if ($scope === 'friends') {
             // Only the people the current user follows, plus themself.
@@ -74,6 +81,7 @@ class LeaderboardController extends Controller
             'me' => $meEntry,
             'species' => $species,
             'rankedSpecies' => $rankedSpeciesFinal,
+            'selectedSpeciesId' => $selectedSpeciesId,
             'scope' => $scope,
         ]);
     }

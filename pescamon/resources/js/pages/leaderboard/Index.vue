@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import Icon from '@/components/pescadex/Icon.vue';
 
@@ -33,7 +33,7 @@ interface RankedSpecies {
     is_current_user: boolean,
 }
 
-const props = defineProps<{ ranking: Entry[]; species: Species[], rankedSpecies: RankedSpecies[], me: Entry | null; scope: 'global' | 'friends' | 'species' }>();
+const props = defineProps<{ ranking: Entry[]; species: Species[], rankedSpecies: RankedSpecies[], selectedSpeciesId: number | null, me: Entry | null; scope: 'global' | 'friends' | 'species' }>();
 
 const tabs = [
     { key: 'global', label: 'Global' },
@@ -41,14 +41,29 @@ const tabs = [
     { key: 'friends', label: 'Amigos' },
 ] as const;
 
+const specie_id = ref<number | null>(props.selectedSpeciesId);
+
+watch(
+    () => props.selectedSpeciesId,
+    (id) => {
+        if (id !== null) specie_id.value = id;
+    },
+);
+
 function selectTab(key: (typeof tabs)[number]['key']) {
     if (key === props.scope) return;
-    router.get('/leaderboard', { scope: key }, { preserveScroll: true, preserveState: true, replace: true });
+    const params = key === 'species' ? { scope: key, species_id: specie_id.value ?? undefined } : { scope: key };
+    router.get('/leaderboard', params, { preserveScroll: true, preserveState: true, replace: true });
+}
+
+function selectSpecies(event: Event) {
+    const id = Number((event.target as HTMLSelectElement).value);
+    specie_id.value = id;
+    router.get('/leaderboard', { scope: 'species', species_id: id }, { preserveScroll: true, preserveState: true, replace: true });
 }
 
 const showFriendsHint = computed(() => props.scope === 'friends' && props.ranking.length <= 1);
 const showSearchBySpeciesBar = computed(() => props.scope === 'species');
-const specie_id = ref(props.species[0]?.id ?? null);
 
 const podium = computed(() => ({
     first: props.ranking.find((r) => r.rank === 1),
@@ -128,7 +143,7 @@ function profileHref(e: {id: number, is_current_user: boolean}) {
         <div class="species-chip-wrap">
             <div class="species-chip">
                 <Icon name="fish" :size="16" color="var(--teal)" />
-                <select v-model="specie_id" class="species-select">
+                <select :value="specie_id" @change="selectSpecies" class="species-select">
                     <option v-for="s in props.species" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </select>
                 <Icon name="chevron-down" :size="14" color="var(--text-faint)" />

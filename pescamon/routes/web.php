@@ -35,6 +35,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/catches/create', [CatchController::class, 'create'])->name('catches.create');
     Route::post('/catches', [CatchController::class, 'store'])->name('catches.store');
+    Route::get('/catches/{catch}/edit', [CatchController::class, 'edit'])->name('catches.edit');
+    Route::put('/catches/{catch}', [CatchController::class, 'update'])->name('catches.update');
     Route::get('/catches/{catch}', [CatchController::class, 'show'])->name('catches.show');
     Route::post('/catches/{catch}/like', [LikeController::class, 'toggle'])->name('catches.like');
     Route::post('/catches/{catch}/comments', [CommentController::class, 'store'])->name('catches.comments.store');

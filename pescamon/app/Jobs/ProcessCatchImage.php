@@ -40,17 +40,7 @@ class ProcessCatchImage implements ShouldQueue
         $imagePath = Storage::disk('public')->path($this->catch->image_path);
 
         // --- Generate thumbnail ---
-        $thumbnailRelative = 'thumbnails/'.$this->catch->id.'.jpg';
-        $thumbnailAbsolute = Storage::disk('public')->path($thumbnailRelative);
-
-        Storage::disk('public')->makeDirectory('thumbnails');
-
-        // Intervention Image v4: decode() loads the source, save() encodes by
-        // file extension (.jpg) with the given quality option.
-        $manager = new ImageManager(new Driver);
-        $manager->decode($imagePath)
-            ->cover(400, 400)
-            ->save($thumbnailAbsolute, quality: 85);
+        $thumbnailRelative = self::generateThumbnail($this->catch);
 
         // --- Extract EXIF ---
         $exif = $exifService->extract($imagePath);
@@ -76,5 +66,29 @@ class ProcessCatchImage implements ShouldQueue
         $this->catch->update($updateData);
 
         event(new CatchProcessed($this->catch));
+    }
+
+    /**
+     * Generate (or regenerate) the 400×400 thumbnail for a catch and return its
+     * relative path. Reused when a catch photo is replaced during an edit, where
+     * we must NOT re-fire CatchProcessed (that would re-award XP/achievements).
+     */
+    public static function generateThumbnail(FishCatch $catch): string
+    {
+        $imagePath = Storage::disk('public')->path($catch->image_path);
+
+        $thumbnailRelative = 'thumbnails/'.$catch->id.'.jpg';
+        $thumbnailAbsolute = Storage::disk('public')->path($thumbnailRelative);
+
+        Storage::disk('public')->makeDirectory('thumbnails');
+
+        // Intervention Image v4: decode() loads the source, save() encodes by
+        // file extension (.jpg) with the given quality option.
+        $manager = new ImageManager(new Driver);
+        $manager->decode($imagePath)
+            ->cover(400, 400)
+            ->save($thumbnailAbsolute, quality: 85);
+
+        return $thumbnailRelative;
     }
 }

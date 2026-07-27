@@ -31,6 +31,7 @@ interface CatchData {
     is_personal_best: boolean;
     likes_count: number;
     is_liked: boolean;
+    can_edit: boolean;
     comments: Comment[];
 }
 
@@ -69,7 +70,10 @@ function submitComment() {
             <div class="hero-fade" />
             <div class="hero-actions">
                 <button class="round" @click="goBack('/feed')"><Icon name="arrow-left" :size="20" /></button>
-                <Link :href="`/species/${item.species.slug}`" class="round"><Icon name="fish" :size="18" /></Link>
+                <div class="hero-right">
+                    <Link v-if="item.can_edit" :href="`/catches/${item.id}/edit`" class="round"><Icon name="pencil" :size="17" /></Link>
+                    <Link :href="`/species/${item.species.slug}`" class="round"><Icon name="fish" :size="18" /></Link>
+                </div>
             </div>
             <div class="species-tag">
                 <span class="st-name">{{ item.species.name }}</span>
@@ -162,6 +166,10 @@ function submitComment() {
     right: 16px;
     display: flex;
     justify-content: space-between;
+}
+.hero-right {
+    display: flex;
+    gap: 8px;
 }
 .round {
     width: 38px;

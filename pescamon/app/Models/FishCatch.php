@@ -45,7 +45,7 @@ class FishCatch extends Model
     protected function casts(): array
     {
         return [
-            'weight_kg' => 'decimal:3',
+            'weight_kg' => 'decimal:2',
             'length_cm' => 'decimal:2',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',

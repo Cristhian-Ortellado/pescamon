@@ -45,7 +45,6 @@ class SpeciesSeeder extends Seeder
             ['name' => 'Cascarudo', 'normalize_name' => 'cascarudo', 'scientific_name' => 'Hoplosternum littorale', 'rarity' => 'uncommon', 'avg_kg' => 0.3, 'habitat' => 'Fondos fangosos.'],
             ['name' => 'Mandi\'í', 'normalize_name' => 'mandi\'i', 'scientific_name' => 'Pimelodella gracilis', 'rarity' => 'uncommon', 'avg_kg' => 0.15, 'habitat' => 'Arroyos.'],
             ['name' => 'Vieja del Agua Grande', 'normalize_name' => 'vieja_del_agua_grande', 'scientific_name' => 'Hypostomus commersoni', 'rarity' => 'uncommon', 'avg_kg' => 2.0, 'habitat' => 'Fondos rocosos.'],
-            ['name' => 'Bagre Sapo', 'normalize_name' => 'bagre_sapo', 'scientific_name' => 'Rhamdia quelen', 'rarity' => 'uncommon', 'avg_kg' => 0.8, 'habitat' => 'Raíces y troncos sumergidos.'],
             ['name' => 'Guacamayo', 'normalize_name' => 'guacamayo', 'scientific_name' => 'Pterygoplichthys anisitsi', 'rarity' => 'uncommon', 'avg_kg' => 1.5, 'habitat' => 'Lagunas y ríos lentos.'],
             ['name' => 'Chanchita', 'normalize_name' => 'chanchita', 'scientific_name' => 'Australoheros facetus', 'rarity' => 'uncommon', 'avg_kg' => 0.12, 'habitat' => 'Vegetación acuática.'],
             ['name' => 'Mojarra Grande', 'normalize_name' => 'mojarra_grande', 'scientific_name' => 'Astyanax abramis', 'rarity' => 'uncommon', 'avg_kg' => 0.15, 'habitat' => 'Cardúmenes en ríos.'],
@@ -56,7 +55,6 @@ class SpeciesSeeder extends Seeder
             ['name' => 'Boguero', 'normalize_name' => 'boguero', 'scientific_name' => 'Schizodon borellii', 'rarity' => 'uncommon', 'avg_kg' => 1.0, 'habitat' => 'Grandes ríos.'],
             ['name' => 'Bagre Trompita', 'normalize_name' => 'bagre_trompita', 'scientific_name' => 'Trachelyopterus galeatus', 'rarity' => 'uncommon', 'avg_kg' => 0.1, 'habitat' => 'Arroyos y lagunas.'],
 
-            ['name' => 'Sábalo', 'normalize_name' => 'sabalo', 'scientific_name' => 'Prochilodus lineatus', 'rarity' => 'common', 'avg_kg' => 1.5, 'habitat' => 'Cardúmenes en grandes ríos.'],
             ['name' => 'Tararira', 'normalize_name' => 'tararira', 'scientific_name' => 'Hoplias malabaricus', 'rarity' => 'common', 'avg_kg' => 1.5, 'habitat' => 'Lagunas y esteros.'],
             ['name' => 'Bagre Amarillo', 'normalize_name' => 'bagre_amarillo', 'scientific_name' => 'Pimelodus maculatus', 'rarity' => 'common', 'avg_kg' => 0.8, 'habitat' => 'Fondos fangosos.'],
             ['name' => 'Piraña Roja', 'normalize_name' => 'pirana_roja', 'scientific_name' => 'Pygocentrus nattereri', 'rarity' => 'common', 'avg_kg' => 0.6, 'habitat' => 'Cardúmenes en aguas cálidas.'],
@@ -70,7 +68,6 @@ class SpeciesSeeder extends Seeder
             ['name' => 'Mojarrita Plateada', 'normalize_name' => 'mojarrita_plateada', 'scientific_name' => 'Cheirodon interruptus', 'rarity' => 'common', 'avg_kg' => 0.01, 'habitat' => 'Aguas claras.'],
             ['name' => 'Piquirí', 'normalize_name' => 'piquiri', 'scientific_name' => 'Cyphocharax spilotus', 'rarity' => 'common', 'avg_kg' => 0.3, 'habitat' => 'Arroyos y ríos lentos.'],
             ['name' => 'Pira\'i', 'normalize_name' => 'pira\'i', 'scientific_name' => 'Odontostilbe pequira', 'rarity' => 'common', 'avg_kg' => 0.01, 'habitat' => 'Cardúmenes de arroyos y lagunas.'],
-            ['name' => 'Dentón', 'normalize_name' => 'denton', 'scientific_name' => 'Raphiodon vulpinus', 'rarity' => 'common', 'avg_kg' => 2.0, 'habitat' => 'Grandes ríos de corriente rápida.'],
         ];
 
         foreach ($species as $data) {

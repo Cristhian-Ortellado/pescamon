@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsSuperadmin;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -20,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->alias([
-            'superadmin' => \App\Http\Middleware\EnsureUserIsSuperadmin::class,
+            'superadmin' => EnsureUserIsSuperadmin::class,
         ]);
 
         $middleware->web(append: [

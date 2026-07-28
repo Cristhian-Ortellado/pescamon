@@ -32,10 +32,10 @@ class ProductFactory extends Factory
     /** Attach a number of gallery images in order. */
     public function withImages(int $count = 3): static
     {
-        return $this->afterCreating(function (\App\Models\Product $product) use ($count) {
+        return $this->afterCreating(function (Product $product) use ($count) {
             for ($i = 0; $i < $count; $i++) {
                 $product->images()->create([
-                    'path' => 'products/'.\Illuminate\Support\Str::uuid().'.jpg',
+                    'path' => 'products/'.Str::uuid().'.jpg',
                     'position' => $i,
                 ]);
             }

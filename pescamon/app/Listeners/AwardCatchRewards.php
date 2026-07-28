@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\CatchProcessed;
+use App\Notifications\CatchRewardNotification;
 use App\Services\AchievementService;
 use App\Services\LevelingService;
 
@@ -82,7 +83,7 @@ class AwardCatchRewards
         ], $newAchievements);
 
         // Store as a standard Laravel database notification
-        $user->notify(new \App\Notifications\CatchRewardNotification(
+        $user->notify(new CatchRewardNotification(
             $catch,
             $messages,
             $reward['xp'],

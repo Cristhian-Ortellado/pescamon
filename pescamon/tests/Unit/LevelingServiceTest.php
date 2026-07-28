@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use App\Services\LevelingService;
 
 test('xp required follows N squared times 100 formula', function () {
@@ -13,7 +14,7 @@ test('xp required follows N squared times 100 formula', function () {
 test('user levels up when xp threshold is crossed', function () {
     $service = new LevelingService;
 
-    $user = new \App\Models\User;
+    $user = new User;
     $user->level = 1;
     $user->xp = 390;
 
@@ -27,7 +28,7 @@ test('user levels up when xp threshold is crossed', function () {
 test('level progress calculates percentage correctly', function () {
     $service = new LevelingService;
 
-    $user = new \App\Models\User;
+    $user = new User;
     $user->level = 1;
     $user->xp = 200; // halfway between level 1 (100 xp required) and level 2 (400)
 

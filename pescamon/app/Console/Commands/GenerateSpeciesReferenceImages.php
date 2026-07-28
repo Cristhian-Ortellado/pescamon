@@ -136,7 +136,7 @@ class GenerateSpeciesReferenceImages extends Command
         $model = config('services.gemini.model');
 
         $prompt = "Edita esta imagen para que solo se vea el pez {$name} ({$scientificName}) con un fondo lindo y natural acorde a su hábitat. "
-            ."No agregues marcos, bordes, texto ni watermarks. El pez debe quedar centrado y ser el foco principal de la imagen.";
+            .'No agregues marcos, bordes, texto ni watermarks. El pez debe quedar centrado y ser el foco principal de la imagen.';
 
         $response = Http::timeout(60)->post(
             "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}",

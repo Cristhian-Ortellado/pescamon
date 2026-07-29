@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Species;
+use App\Rules\MaxMegapixels;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,7 +18,17 @@ class StoreCatchRequest extends FormRequest
     {
         return [
             'species_id' => ['required', 'integer', Rule::exists('species', 'id')->where('is_active', true)],
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:10240'],
+            // Ordered cheapest-first and bailed so the dimension checks only run
+            // on something already confirmed to be an image within the size cap.
+            'image' => [
+                'bail',
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:10240',
+                'dimensions:max_width=9000,max_height=9000',
+                new MaxMegapixels(50),
+            ],
             'weight_kg' => ['required', 'numeric', 'min:0.001', 'max:2000'],
             'length_cm' => ['nullable', 'numeric', 'min:0.1', 'max:1000'],
             'caught_at' => ['required', 'date', 'before_or_equal:now'],
@@ -66,6 +77,7 @@ class StoreCatchRequest extends FormRequest
             'image.required' => 'La foto de la captura es obligatoria.',
             'image.mimes' => 'La imagen debe ser JPG o PNG.',
             'image.max' => 'La imagen no puede superar los 10 MB.',
+            'image.dimensions' => 'La imagen no puede superar los 9000 × 9000 píxeles.',
             'weight_kg.required' => 'El peso es obligatorio.',
             'weight_kg.min' => 'El peso debe ser mayor a 0.',
             'caught_at.before_or_equal' => 'La fecha de captura no puede ser en el futuro.',

@@ -72,6 +72,23 @@ return;
     imagePreview.value = URL.createObjectURL(file);
 }
 
+// Peso and Longitud accept non-negative values only. The save button lives
+// outside any <form>, so the browser never runs native constraint validation —
+// min="0" alone stops the spinners but not a typed or pasted "-5". Clearing the
+// value here keeps a negative from ever reaching the form state.
+function onNonNegativeInput(field: 'weight_kg' | 'length_cm', e: Event) {
+    const el = e.target as HTMLInputElement;
+
+    if (el.value !== '' && Number(el.value) < 0) {
+        el.value = '';
+        form[field] = '';
+
+        return;
+    }
+
+    form[field] = el.value;
+}
+
 function locationIcon() {
     return leaflet.divIcon({
         html: '<span style="display:block;width:22px;height:22px;border-radius:50% 50% 50% 2px;transform:rotate(45deg);background:var(--accent-pdx,#f5a524);border:2.5px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.4)"></span>',
@@ -221,7 +238,15 @@ function save() {
             <div class="field">
                 <div class="label">Peso</div>
                 <label class="num">
-                    <input v-model="form.weight_kg" type="number" step="0.1" inputmode="decimal" placeholder="0.0" />
+                    <input
+                        :value="form.weight_kg"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        inputmode="decimal"
+                        placeholder="0.0"
+                        @input="onNonNegativeInput('weight_kg', $event)"
+                    />
                     <span class="unit">kg</span>
                 </label>
                 <p v-if="form.errors.weight_kg" class="err">{{ form.errors.weight_kg }}</p>
@@ -229,7 +254,14 @@ function save() {
             <div class="field">
                 <div class="label">Longitud</div>
                 <label class="num">
-                    <input v-model="form.length_cm" type="number" inputmode="decimal" placeholder="—" />
+                    <input
+                        :value="form.length_cm"
+                        type="number"
+                        min="0"
+                        inputmode="decimal"
+                        placeholder="—"
+                        @input="onNonNegativeInput('length_cm', $event)"
+                    />
                     <span class="unit">cm</span>
                 </label>
             </div>

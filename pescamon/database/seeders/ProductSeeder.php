@@ -3,13 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\Product;
+use Database\Seeders\Concerns\PublishesSeedFiles;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProductSeeder extends Seeder
 {
+    use PublishesSeedFiles;
+
     public function run(): void
     {
         $products = [
@@ -84,12 +85,9 @@ class ProductSeeder extends Seeder
      */
     private function attachImage(Product $product, string $filename): void
     {
-        $source = base_path('files/products/'.$filename);
         $path = 'products/'.$filename;
 
-        if (File::exists($source) && ! Storage::disk('public')->exists($path)) {
-            Storage::disk('public')->put($path, File::get($source));
-        }
+        $this->publishSeedFile($path);
 
         $product->images()->updateOrCreate(
             ['position' => 0],

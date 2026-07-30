@@ -3,13 +3,19 @@
 namespace Database\Seeders;
 
 use App\Models\Species;
+use Database\Seeders\Concerns\PublishesSeedFiles;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 class SpeciesSeeder extends Seeder
 {
+    use PublishesSeedFiles;
+
     public function run(): void
     {
+        // Shared placeholder shown while a species is still locked.
+        $this->publishSeedFile('images/species/locked-placeholder.svg');
+
         $species = [
             // Agua dulce: common, uncommon, rare, legendary
             ['name' => 'Dorado', 'normalize_name' => 'dorado', 'scientific_name' => 'Salminus brasiliensis', 'rarity' => 'legendary', 'avg_kg' => 6.0, 'habitat' => 'Aguas de corriente rápida, cauce principal de grandes ríos.'],
@@ -70,10 +76,14 @@ class SpeciesSeeder extends Seeder
             ['name' => 'Mojarrita Plateada', 'normalize_name' => 'mojarrita_plateada', 'scientific_name' => 'Cheirodon interruptus', 'rarity' => 'common', 'avg_kg' => 0.01, 'habitat' => 'Aguas claras.'],
             ['name' => 'Piquirí', 'normalize_name' => 'piquiri', 'scientific_name' => 'Cyphocharax spilotus', 'rarity' => 'common', 'avg_kg' => 0.3, 'habitat' => 'Arroyos y ríos lentos.'],
             ['name' => 'Pira\'i', 'normalize_name' => 'pira\'i', 'scientific_name' => 'Odontostilbe pequira', 'rarity' => 'common', 'avg_kg' => 0.01, 'habitat' => 'Cardúmenes de arroyos y lagunas.'],
-            ['name' => 'Dentón', 'normalize_name' => 'denton', 'scientific_name' => 'Raphiodon vulpinus', 'rarity' => 'common', 'avg_kg' => 2.0, 'habitat' => 'Grandes ríos de corriente rápida.']
+            ['name' => 'Dentón', 'normalize_name' => 'denton', 'scientific_name' => 'Raphiodon vulpinus', 'rarity' => 'common', 'avg_kg' => 2.0, 'habitat' => 'Grandes ríos de corriente rápida.'],
         ];
 
         foreach ($species as $data) {
+            // Publish this species' reference image onto the public disk before
+            // storing its path on the record.
+            $this->publishSeedFile('images/species/'.$data['normalize_name'].'-placeholder.png');
+
             Species::firstOrCreate(
                 ['slug' => Str::slug($data['name'])],
                 [
@@ -84,7 +94,7 @@ class SpeciesSeeder extends Seeder
                     'rarity' => $data['rarity'],
                     'average_weight_kg' => $data['avg_kg'],
                     'image_locked_path' => 'images/species/locked-placeholder.svg',
-                    'image_reference_path' => 'images/species/' . $data['normalize_name'] . '-placeholder.png',
+                    'image_reference_path' => 'images/species/'.$data['normalize_name'].'-placeholder.png',
                     'is_active' => true,
                 ]
             );

@@ -3,12 +3,18 @@
 namespace Database\Seeders;
 
 use App\Models\Achievement;
+use Database\Seeders\Concerns\PublishesSeedFiles;
 use Illuminate\Database\Seeder;
 
 class AchievementSeeder extends Seeder
 {
+    use PublishesSeedFiles;
+
     public function run(): void
     {
+        // Publish achievement icons (images/achievements/<code>.svg) kept in /files.
+        $this->publishSeedDirectory('images/achievements');
+
         $achievements = [
             [
                 'code' => 'FIRST_CATCH',

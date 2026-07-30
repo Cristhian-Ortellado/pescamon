@@ -9,6 +9,7 @@ use App\Models\Species;
 use App\Models\User;
 use App\Services\AchievementService;
 use App\Services\LevelingService;
+use Database\Seeders\Concerns\PublishesSeedFiles;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 
@@ -20,6 +21,8 @@ use Illuminate\Support\Collection;
  */
 class DemoContentSeeder extends Seeder
 {
+    use PublishesSeedFiles;
+
     /** Sample comments left on other anglers' catches. */
     private const COMMENTS = [
         '¡Qué ejemplar! 🎣',
@@ -36,6 +39,13 @@ class DemoContentSeeder extends Seeder
 
     public function run(): void
     {
+        // Publish the base media used by the demo catches, avatars and thumbnails
+        // (referenced by the factories and the hardcoded catch photo below).
+        $this->publishSeedDirectory('avatars');
+        $this->publishSeedDirectory('thumbnails');
+        $this->publishSeedFile('catches/ibaIGF9l3By2wYLRIw56eb52TdaBXDFZes8kY7Bx.png');
+        $this->publishSeedFile('images/species/amarillo-placeholder.png');
+
         $leveling = app(LevelingService::class);
         $achievements = app(AchievementService::class);
 

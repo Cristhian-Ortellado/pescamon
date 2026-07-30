@@ -13,13 +13,17 @@ class CatchFactory extends Factory
 
     public function definition(): array
     {
+        // Seed catches reuse one of the base thumbnails for both the full image
+        // and its thumbnail, so no real thumbnail needs to be generated.
+        $image = 'thumbnails/backgroud_'.rand(1, 5).'.jpeg';
+
         return [
             'user_id' => User::factory(),
             'species_id' => Species::factory(),
             'weight_kg' => round($this->faker->randomFloat(3, 0.1, 30), 3),
             'length_cm' => round($this->faker->randomFloat(2, 5, 150), 2),
-            'image_path' => 'images/species/amarillo-placeholder.png',
-            'thumbnail_path' => 'thumbnails/backgroud_'. rand(1, 4). '.jpeg',
+            'image_path' => $image,
+            'thumbnail_path' => $image,
             // Bounding box of Paraguay (approx.): lat -27.6..-19.3, lng -62.6..-54.3.
             'latitude' => $this->faker->latitude(-27.6, -19.3),
             'longitude' => $this->faker->longitude(-62.6, -54.3),

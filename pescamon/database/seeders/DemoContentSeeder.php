@@ -39,12 +39,10 @@ class DemoContentSeeder extends Seeder
 
     public function run(): void
     {
-        // Publish the base media used by the demo catches, avatars and thumbnails
-        // (referenced by the factories and the hardcoded catch photo below).
+        // Publish the base media referenced by the factories: user avatars and
+        // the catch images/thumbnails.
         $this->publishSeedDirectory('avatars');
         $this->publishSeedDirectory('thumbnails');
-        $this->publishSeedFile('catches/ibaIGF9l3By2wYLRIw56eb52TdaBXDFZes8kY7Bx.png');
-        $this->publishSeedFile('images/species/amarillo-placeholder.png');
 
         $leveling = app(LevelingService::class);
         $achievements = app(AchievementService::class);
@@ -115,7 +113,6 @@ class DemoContentSeeder extends Seeder
                 'status' => 'verified',
                 'xp_earned' => 0,
                 'is_personal_best' => false,
-                'image_path' => 'catches/ibaIGF9l3By2wYLRIw56eb52TdaBXDFZes8kY7Bx.png',
             ]);
 
             $reward = $leveling->calculateCatchReward($user, $catch);

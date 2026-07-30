@@ -13,6 +13,7 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 // Settings form pages keep the original shadcn settings shell.
 const legacySettings = ['settings/Appearance'];
 
+// @ts-expect-error
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {

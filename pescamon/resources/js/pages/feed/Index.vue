@@ -60,7 +60,7 @@ function follow(id: number) {
     </div>
 
     <article
-        v-for="(post, i) in posts"
+        v-for="post in posts"
         :key="post.id"
         class="post"
         @click="openCatch(post.id)"
@@ -92,7 +92,7 @@ function follow(id: number) {
             <Icon v-else name="more-horizontal" :size="20" color="var(--text-faint)" />
         </div>
 
-        <div class="media" :style="{ height: i === 0 ? '240px' : '170px' }">
+        <div class="media">
             <CatchPhoto :path="post.image_path" :rarity="post.species.rarity" :stripe="10" :alt="post.species.name" />
             <div class="species-tag">
                 <span class="st-name">{{ post.species.name }}</span>
@@ -231,9 +231,12 @@ function follow(id: number) {
 }
 .media {
     position: relative;
+    /* Taller 4:3 frame so catch photos read clearly, scaling with the width. */
+    aspect-ratio: 4 / 3;
     border-radius: 16px;
     overflow: hidden;
     margin-top: 11px;
+    background: #06161c;
 }
 .species-tag {
     position: absolute;

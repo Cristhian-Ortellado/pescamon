@@ -13,9 +13,15 @@ class CatchFactory extends Factory
 
     public function definition(): array
     {
-        // Seed catches reuse one of the base thumbnails for both the full image
-        // and its thumbnail, so no real thumbnail needs to be generated.
-        $image = 'thumbnails/backgroud_'.rand(1, 5).'.jpeg';
+        // Seed catches reuse one of the base catch photos (kept in /files/catches)
+        // for both the full image and its thumbnail, so no real thumbnail needs
+        // to be generated.
+        $image = $this->faker->randomElement([
+            'catches/catch-1.png',
+            'catches/catch-2.png',
+            'catches/catch-3.jpeg',
+            'catches/catch-4.png',
+        ]);
 
         return [
             'user_id' => User::factory(),

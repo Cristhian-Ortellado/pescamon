@@ -40,9 +40,9 @@ class DemoContentSeeder extends Seeder
     public function run(): void
     {
         // Publish the base media referenced by the factories: user avatars and
-        // the catch images/thumbnails.
+        // the catch photos.
         $this->publishSeedDirectory('avatars');
-        $this->publishSeedDirectory('thumbnails');
+        $this->publishSeedDirectory('catches');
 
         $leveling = app(LevelingService::class);
         $achievements = app(AchievementService::class);

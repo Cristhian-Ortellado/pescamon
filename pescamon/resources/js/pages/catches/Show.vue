@@ -66,7 +66,7 @@ function submitComment() {
     <div class="screen">
         <!-- hero -->
         <div class="hero">
-            <CatchPhoto :path="item.image_path" :rarity="item.species.rarity" :stripe="11" :alt="item.species.name" />
+            <CatchPhoto :path="item.image_path" :rarity="item.species.rarity" :stripe="11" :alt="item.species.name" fit="contain" />
             <div class="hero-fade" />
             <div class="hero-actions">
                 <button class="round" @click="goBack('/feed')"><Icon name="arrow-left" :size="20" /></button>
@@ -151,7 +151,23 @@ function submitComment() {
 }
 .hero {
     position: relative;
-    height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Grow with the photo instead of a fixed frame; dark backdrop makes any
+       letterbox on tall/short images read as intentional. */
+    min-height: 260px;
+    max-height: 72vh;
+    overflow: hidden;
+    background: #06161c;
+}
+.hero :deep(.catch-img.fit-contain) {
+    width: 100%;
+    height: auto;
+    max-height: 72vh;
+}
+.hero :deep(.fish-photo) {
+    align-self: stretch;
 }
 .hero-fade {
     position: absolute;

@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import CatchPhoto from '@/components/pescadex/CatchPhoto.vue';
 import Icon from '@/components/pescadex/Icon.vue';
+import RarityBadge from '@/components/pescadex/RarityBadge.vue';
 import SpeciesCard from '@/components/pescadex/SpeciesCard.vue';
 import StatCard from '@/components/pescadex/StatCard.vue';
 import XpBar from '@/components/pescadex/XpBar.vue';
 import { goBack } from '@/lib/navigation';
+import { timeAgo } from '@/lib/pescadex';
 
 interface ProfileUser {
     id: number;
@@ -27,10 +30,23 @@ interface PokedexEntry {
     image_path: string | null;
     caught: boolean;
 }
+interface Post {
+    id: number;
+    species: { id: number; name: string; slug: string; rarity: string };
+    weight_kg: number;
+    location_name: string | null;
+    caught_at: string;
+    image_path: string | null;
+    likes_count: number;
+    comments_count: number;
+    is_liked: boolean;
+    is_personal_best: boolean;
+}
 
 const props = defineProps<{
     profileUser: ProfileUser;
     pokedex: PokedexEntry[];
+    posts: Post[];
     achievements: Array<{ id: number; name: string }>;
     stats: { species_caught: number; species_total: number; record_kg: number };
     levelProgress: number;
@@ -63,6 +79,12 @@ function openSpecies(entry: PokedexEntry) {
 }
 function toggleFollow() {
     router.post(`/users/${props.profileUser.id}/follow`, {}, { preserveScroll: true });
+}
+function openCatch(id: number) {
+    router.visit(`/catches/${id}`);
+}
+function toggleLike(id: number) {
+    router.post(`/catches/${id}/like`, {}, { preserveScroll: true });
 }
 </script>
 
@@ -220,6 +242,43 @@ function toggleFollow() {
             />
             <p v-if="caughtSpecies.length === 0" class="muted-note">Aún no tiene capturas verificadas.</p>
         </div>
+
+        <div class="section-head">
+            <div class="section-title">Capturas recientes</div>
+        </div>
+        <p v-if="posts.length === 0" class="muted-note solo">Todavía no ha publicado capturas.</p>
+        <article
+            v-for="post in posts"
+            :key="post.id"
+            class="post"
+            @click="openCatch(post.id)"
+        >
+            <div class="media">
+                <CatchPhoto :path="post.image_path" :rarity="post.species.rarity" :stripe="10" :alt="post.species.name" />
+                <div class="species-tag">
+                    <span class="st-name">{{ post.species.name }}</span>
+                    <RarityBadge :rarity="post.species.rarity" variant="short" />
+                </div>
+                <div class="weight-tag">{{ post.weight_kg }} kg</div>
+                <div v-if="post.is_personal_best" class="record-tag">🏆 Récord</div>
+            </div>
+
+            <div class="post-meta">
+                <template v-if="post.location_name">{{ post.location_name }} · </template>{{ timeAgo(post.caught_at) }}
+            </div>
+
+            <div class="actions-row">
+                <button class="action" :class="{ liked: post.is_liked }" @click.stop="toggleLike(post.id)">
+                    <Icon name="heart" :size="21" :color="post.is_liked ? 'var(--accent-pdx)' : 'currentColor'" :fill="post.is_liked ? 'var(--accent-pdx)' : 'none'" />
+                    <span>{{ post.likes_count }}</span>
+                </button>
+                <div class="action muted">
+                    <Icon name="message-circle" :size="21" />
+                    <span>{{ post.comments_count }}</span>
+                </div>
+            </div>
+        </article>
+
         <div class="bottom-spacer" />
     </template>
 </template>
@@ -534,6 +593,92 @@ function toggleFollow() {
     font-weight: 600;
     font-size: 17px;
     color: var(--text);
+}
+.muted-note.solo {
+    padding: 8px 20px 20px;
+}
+.post {
+    padding: 4px 20px 16px;
+    cursor: pointer;
+}
+.post .media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #06161c;
+}
+.post .species-tag {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    background: rgba(6, 22, 32, 0.78);
+    border: 1px solid #2a4c62;
+    border-radius: 999px;
+    padding: 5px 10px;
+}
+.post .st-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 12.5px;
+    color: #fff;
+}
+.post .weight-tag {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    background: rgba(6, 22, 32, 0.78);
+    border: 1px solid #2a4c62;
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 15px;
+    color: #fff;
+}
+.post .record-tag {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    background: rgba(245, 165, 36, 0.92);
+    color: var(--accent-ink);
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.post-meta {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 9px;
+}
+.actions-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 9px;
+}
+.action {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+    background: none;
+    border: 0;
+    font-family: inherit;
+}
+.action span {
+    font-size: 13px;
+    font-weight: 600;
+}
+.action.muted {
+    color: var(--text-soft);
+}
+.action.liked {
+    color: var(--accent-pdx);
 }
 .fab {
     display: none;

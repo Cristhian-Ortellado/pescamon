@@ -52,13 +52,29 @@ class ProfileController extends Controller
             'caught' => $caughtSpeciesIds->has($s->id),
         ]);
 
-        // Recent verified catches
-        $recentCatches = $profileUser->catches()
+        // Recent verified catches, shaped as feed-style posts (newest first).
+        $likedIds = $authUser->likes()->pluck('catch_id')->flip();
+
+        $posts = $profileUser->catches()
             ->with('species:id,name,slug,rarity')
+            ->withCount(['likes', 'comments'])
             ->where('status', 'verified')
             ->latest('caught_at')
-            ->limit(12)
-            ->get(['id', 'species_id', 'weight_kg', 'thumbnail_path', 'caught_at', 'is_personal_best']);
+            ->limit(20)
+            ->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'species' => $c->species->only(['id', 'name', 'slug', 'rarity']),
+                'weight_kg' => (float) $c->weight_kg,
+                'location_name' => $c->location_name,
+                'caught_at' => $c->caught_at->toISOString(),
+                'image_path' => $c->thumbnail_path ?: $c->image_path,
+                'likes_count' => $c->likes_count,
+                'comments_count' => $c->comments_count,
+                'is_liked' => $likedIds->has($c->id),
+                'is_personal_best' => (bool) $c->is_personal_best,
+            ])
+            ->values();
 
         // Achievements
         $achievements = $profileUser->achievements()
@@ -77,7 +93,7 @@ class ProfileController extends Controller
                 'is_following' => $isFollowing,
             ],
             'pokedex' => $pokedex,
-            'recentCatches' => $recentCatches,
+            'posts' => $posts,
             'achievements' => $achievements,
             'stats' => [
                 'species_caught' => $caughtSpeciesIds->count(),

@@ -4,6 +4,7 @@ import { computed, ref } from 'vue';
 import CatchPhoto from '@/components/pescadex/CatchPhoto.vue';
 import Icon from '@/components/pescadex/Icon.vue';
 import RarityBadge from '@/components/pescadex/RarityBadge.vue';
+import ShareCatchButton from '@/components/pescadex/ShareCatchButton.vue';
 import SpeciesCard from '@/components/pescadex/SpeciesCard.vue';
 import StatCard from '@/components/pescadex/StatCard.vue';
 import XpBar from '@/components/pescadex/XpBar.vue';
@@ -189,6 +190,46 @@ function toggleLike(id: number) {
                     @click="openSpecies(s)"
                 />
             </div>
+
+            <template v-if="posts.length">
+                <div class="pdx-head">
+                    <div class="pdx-title">Capturas recientes</div>
+                </div>
+                <article
+                    v-for="post in posts"
+                    :key="post.id"
+                    class="post"
+                    @click="openCatch(post.id)"
+                >
+                    <div class="media">
+                        <CatchPhoto :path="post.image_path" :rarity="post.species.rarity" :stripe="10" :alt="post.species.name" />
+                        <div class="species-tag">
+                            <span class="st-name">{{ post.species.name }}</span>
+                            <RarityBadge :rarity="post.species.rarity" variant="short" />
+                        </div>
+                        <div class="weight-tag">{{ post.weight_kg }} kg</div>
+                        <div v-if="post.is_personal_best" class="record-tag">🏆 Récord</div>
+                    </div>
+
+                    <div class="post-meta">
+                        <template v-if="post.location_name">{{ post.location_name }} · </template>{{ timeAgo(post.caught_at) }}
+                    </div>
+
+                    <div class="actions-row">
+                        <button class="action" :class="{ liked: post.is_liked }" @click.stop="toggleLike(post.id)">
+                            <Icon name="heart" :size="21" :color="post.is_liked ? 'var(--accent-pdx)' : 'currentColor'" :fill="post.is_liked ? 'var(--accent-pdx)' : 'none'" />
+                            <span>{{ post.likes_count }}</span>
+                        </button>
+                        <div class="action muted">
+                            <Icon name="message-circle" :size="21" />
+                            <span>{{ post.comments_count }}</span>
+                        </div>
+                        <div class="actions-spacer" />
+                        <ShareCatchButton :post="post" />
+                    </div>
+                </article>
+            </template>
+
             <div class="bottom-spacer" />
 
             <Link href="/catches/create" class="fab">
@@ -660,6 +701,9 @@ function toggleLike(id: number) {
     align-items: center;
     gap: 18px;
     margin-top: 9px;
+}
+.actions-spacer {
+    flex: 1;
 }
 .action {
     display: flex;

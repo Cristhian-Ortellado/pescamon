@@ -48,14 +48,14 @@ class StoreCatchRequest extends FormRequest
             }
 
             // Reject catches more than 10× the species average (likely data entry error)
-            $maxAllowed = (float) $species->average_weight_kg * 10;
-
-            if ($weightKg > $maxAllowed) {
-                $validator->errors()->add(
-                    'weight_kg',
-                    "El peso máximo permitido para {$species->name} es {$maxAllowed} kg."
-                );
-            }
+//            $maxAllowed = (float) $species->average_weight_kg * 10;
+//
+//            if ($weightKg > $maxAllowed) {
+//                $validator->errors()->add(
+//                    'weight_kg',
+//                    "El peso máximo permitido para {$species->name} es {$maxAllowed} kg."
+//                );
+//            }
         });
     }
 

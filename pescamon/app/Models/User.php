@@ -111,7 +111,7 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(Like::class);
     }
 
-    /** Species the user has caught at least once (Pokédex). */
+    /** Species the user has caught at least once (Pescadex). */
     public function caughtSpecies(): BelongsToMany
     {
         return $this->belongsToMany(Species::class, 'catches', 'user_id', 'species_id')

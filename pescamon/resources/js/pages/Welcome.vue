@@ -7,7 +7,7 @@ const page = usePage();
 const isAuthed = computed(() => !!(page.props.auth as { user: unknown } | undefined)?.user);
 
 const bullets = [
-    { icon: 'layout-grid', text: 'Tu Pokédex personal de especies' },
+    { icon: 'layout-grid', text: 'Tu Pescadex personal de especies' },
     { icon: 'map-pin', text: 'Mapa social de capturas cercanas' },
     { icon: 'trophy', text: 'Niveles, logros y rankings' },
 ];

@@ -15,8 +15,8 @@ use Illuminate\Support\Carbon;
  *
  * Available achievements (by code):
  *   FIRST_CATCH        – First catch ever submitted
- *   SPECIES_10         – 10 distinct species in Pokédex
- *   SPECIES_25         – 25 distinct species in Pokédex
+ *   SPECIES_10         – 10 distinct species in Pescadex
+ *   SPECIES_25         – 25 distinct species in Pescadex
  *   FOUR_SEASONS       – Catches in all 4 calendar seasons
  *   ABOVE_AVG_WEIGHT   – Catch heavier than species average weight
  *   PERSONAL_BEST_5    – 5 personal bests across any species

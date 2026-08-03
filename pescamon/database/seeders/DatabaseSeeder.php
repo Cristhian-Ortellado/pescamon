@@ -21,9 +21,10 @@ class DatabaseSeeder extends Seeder
         (new ProductSeeder)->run();
 
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Cristhian',
+            'email' => 'cortelladofernandez@gmail.com',
             'is_superadmin' => true,
+            'password' => bcrypt('Cristhian123*'),
         ]);
 
         // Multiple demo anglers, each with catches, follows, likes and comments.

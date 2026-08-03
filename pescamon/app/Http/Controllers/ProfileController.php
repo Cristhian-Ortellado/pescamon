@@ -36,7 +36,7 @@ class ProfileController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'slug', 'rarity', 'image_locked_path', 'image_reference_path']);
 
-        // Species the profile user has caught (Pokédex)
+        // Species the profile user has caught (Pescadex)
         $caughtSpeciesIds = $profileUser->catches()
             ->where('status', 'verified')
             ->distinct()

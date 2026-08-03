@@ -125,7 +125,7 @@ function toggleLike(id: number) {
                 <Icon name="fish" :size="54" color="#2c5266" />
                 <span class="plus"><Icon name="plus" :size="22" color="var(--accent-ink)" /></span>
             </div>
-            <div class="empty-title">Tu Pokédex está vacía</div>
+            <div class="empty-title">Tu Pescadex está vacía</div>
             <div class="empty-text">
                 Registra tu primera captura para desbloquear tu primera carta de especie y empezar a ganar XP.
             </div>
@@ -172,7 +172,7 @@ function toggleLike(id: number) {
             </Link>
 
             <div class="pdx-head">
-                <div class="pdx-title">Mi Pokédex</div>
+                <div class="pdx-title">Mi Pescadex</div>
                 <div class="pdx-tabs">
                     <span class="t" :class="{ active: tab === 'all' }" @click="tab = 'all'">Todas</span>
                     <span class="t" :class="{ active: tab === 'caught' }" @click="tab = 'caught'">Capturadas</span>

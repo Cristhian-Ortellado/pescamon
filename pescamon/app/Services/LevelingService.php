@@ -9,7 +9,7 @@ use App\Models\User;
  * Handles XP rewards and level progression for the gamification system.
  *
  * XP rules per catch:
- *   - NEW species (first time in the user's Pokédex) → high XP (50)
+ *   - NEW species (first time in the user's Pescadex) → high XP (50)
  *   - PERSONAL BEST (exceeds previous weight record for that species) → medium XP (20)
  *   - REPEAT catch (no improvement) → low XP (5)
  *

@@ -16,7 +16,7 @@ class LeaderboardController extends Controller
         $me = $request->user();
         $scope = $request->query('scope') === 'friends' || $request->query('scope') === 'species' ? $request->query('scope') : 'global';
 
-        // Rank users by distinct verified species (Pokédex completion).
+        // Rank users by distinct verified species (Pescadex completion).
         $query = User::withCount(['catches as species_count' => function ($q) {
             $q->where('status', 'verified')->selectRaw('COUNT(DISTINCT species_id)');
         }]);
